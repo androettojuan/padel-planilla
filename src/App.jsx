@@ -7,6 +7,8 @@ import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
 import ConsumosPanel from './components/ConsumosPanel'
+import CuentasPanel from './components/CuentasPanel'
+import MostradorPanel from './components/MostradorPanel'
 import ConfigModal from './components/ConfigModal'
 
 export default function App() {
@@ -52,7 +54,9 @@ export default function App() {
             <CourtsBoard config={config} planilla={planilla} update={update} loading={loading} />
           </section>
           <aside className="layout__consumos">
+            <CuentasPanel config={config} planilla={planilla} update={update} />
             <ConsumosPanel config={config} planilla={planilla} update={update} />
+            <MostradorPanel config={config} planilla={planilla} update={update} />
           </aside>
         </main>
       ) : (
@@ -66,19 +70,26 @@ export default function App() {
   )
 }
 
+// El desglose por medio (contado/mercado/anotado) cuenta solo las líneas ya
+// cobradas; lo no cobrado se acumula en `pendiente`. `total` es el facturado.
 function computeTotals(planilla) {
-  const acc = { contado: 0, mercado: 0, anotado: 0, total: 0 }
+  const acc = { contado: 0, mercado: 0, anotado: 0, pendiente: 0, total: 0 }
+  const sumar = (monto, item) => {
+    if (item.pagado) acc[item.pago] = (acc[item.pago] || 0) + monto
+    else acc.pendiente += monto
+    acc.total += monto
+  }
   for (const lista of Object.values(planilla.turnos || {})) {
-    for (const t of lista) {
-      const monto = Number(t.monto) || 0
-      acc[t.pago] = (acc[t.pago] || 0) + monto
-      acc.total += monto
-    }
+    for (const t of lista) sumar(Number(t.monto) || 0, t)
   }
   for (const c of planilla.consumos || []) {
-    const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)
-    acc[c.pago] = (acc[c.pago] || 0) + sub
-    acc.total += sub
+    sumar((Number(c.precio) || 0) * (Number(c.cantidad) || 0), c)
+  }
+  for (const tab of planilla.mostrador || []) {
+    for (const it of tab.items || []) {
+      // El estado de pago vive en la cuenta de mostrador, no en cada ítem.
+      sumar((Number(it.precio) || 0) * (Number(it.cantidad) || 0), tab)
+    }
   }
   return acc
 }

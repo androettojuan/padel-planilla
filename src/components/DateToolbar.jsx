@@ -33,6 +33,11 @@ export default function DateToolbar({ dateKey, onChange, totals }) {
             <span className="chip__value">{formatMoney(totals[p.id] || 0)}</span>
           </div>
         ))}
+        <div className="chip chip--pend" style={{ '--chip-color': '#94a3b8' }}>
+          <span className="chip__dot" />
+          <span className="chip__label">Pendiente</span>
+          <span className="chip__value">{formatMoney(totals.pendiente || 0)}</span>
+        </div>
       </div>
     </div>
   )

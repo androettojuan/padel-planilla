@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { PAGOS } from '../data/defaults'
+import { PAGOS_BY_ID } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
-import PagoSelector from './PagoSelector'
 
 export default function ConsumosPanel({ config, planilla, update }) {
   const productos = config.productos || []
-  const consumos = planilla.consumos || []
+  // Solo se listan los consumos sin cobrar; al cerrar la cuenta del jugador
+  // quedan pagados y salen de esta vista (siguen sumando en los totales del día).
+  const consumos = (planilla.consumos || []).filter((c) => !c.pagado)
   const [productoId, setProductoId] = useState(productos[0]?.id || '')
   const [jugador, setJugador] = useState('')
 
@@ -36,7 +37,7 @@ export default function ConsumosPanel({ config, planilla, update }) {
       nombre: prod.nombre,
       precio: prod.precio,
       cantidad: 1,
-      pago: PAGOS[0].id,
+      pagado: false,
     }
     update((prev) => ({ ...prev, consumos: [...(prev.consumos || []), nuevo] }))
     setJugador('')
@@ -93,8 +94,10 @@ export default function ConsumosPanel({ config, planilla, update }) {
         <p className="consumos__empty muted">Todavía no hay consumos cargados.</p>
       ) : (
         <ul className="consumos__list">
-          {consumos.map((c) => (
-            <li className="consumo" key={c.id}>
+          {consumos.map((c) => {
+            const medio = c.pagado ? PAGOS_BY_ID[c.pago] : null
+            return (
+            <li className={`consumo ${c.pagado ? 'consumo--pagado' : ''}`} key={c.id}>
               <div className="consumo__info">
                 <span className="consumo__name">{c.nombre}</span>
                 {c.jugador && <span className="consumo__player">{c.jugador}</span>}
@@ -102,6 +105,7 @@ export default function ConsumosPanel({ config, planilla, update }) {
               <div className="consumo__qty">
                 <button
                   className="qty-btn"
+                  disabled={c.pagado}
                   onClick={() => updateConsumo(c.id, { cantidad: Math.max(1, (Number(c.cantidad) || 1) - 1) })}
                 >
                   −
@@ -109,6 +113,7 @@ export default function ConsumosPanel({ config, planilla, update }) {
                 <span className="qty-value">{c.cantidad}</span>
                 <button
                   className="qty-btn"
+                  disabled={c.pagado}
                   onClick={() => updateConsumo(c.id, { cantidad: (Number(c.cantidad) || 1) + 1 })}
                 >
                   +
@@ -117,12 +122,22 @@ export default function ConsumosPanel({ config, planilla, update }) {
               <span className="consumo__sub">
                 {formatMoney((Number(c.precio) || 0) * (Number(c.cantidad) || 0))}
               </span>
-              <PagoSelector value={c.pago} size="sm" onChange={(pago) => updateConsumo(c.id, { pago })} />
-              <button className="player__del" onClick={() => removeConsumo(c.id)} aria-label="Quitar">
-                ×
-              </button>
+              {c.pagado ? (
+                <span
+                  className="pago pago--sm pago--lock"
+                  style={{ '--pago-color': medio?.color }}
+                  title={`Pagado · ${medio?.label || ''}`}
+                >
+                  ✓ {medio?.short || 'OK'}
+                </span>
+              ) : (
+                <button className="player__del" onClick={() => removeConsumo(c.id)} aria-label="Quitar">
+                  ×
+                </button>
+              )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
       </div>

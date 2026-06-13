@@ -469,8 +469,6 @@ select {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
-  position: sticky;
-  top: 16px;
 }
 .consumos__total {
   font-weight: 800;
@@ -557,6 +555,199 @@ select {
 .consumos__empty {
   text-align: center;
   padding: 20px 0;
+}
+
+/* ---------- Estados de pago (líneas bloqueadas) ---------- */
+.player--pagado .player__name,
+.player--pagado .player__money {
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: default;
+}
+.consumo--pagado {
+  opacity: 0.72;
+}
+.pago--lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Panel de cuentas ---------- */
+.cuentas {
+  margin-bottom: 18px;
+}
+.cuentas__pend {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b45309;
+}
+.cuentas__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.cuentas__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.cuenta {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cuenta--pagada {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.cuenta__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cuenta__name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.cuenta__total {
+  font-weight: 800;
+  font-size: 15px;
+}
+.cuenta__detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.cuenta__line {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.cuenta__cobrar {
+  width: 100%;
+}
+.cuenta__medios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.medio-btn {
+  flex: 1 1 auto;
+  border: 1px solid color-mix(in srgb, var(--pago-color) 45%, transparent);
+  background: color-mix(in srgb, var(--pago-color) 12%, transparent);
+  color: var(--pago-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.12s ease;
+}
+.medio-btn:hover {
+  background: var(--pago-color);
+  color: #fff;
+}
+.cuenta__paid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cuentas__pagadas {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.cuentas__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 4px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cuentas__toggle:hover {
+  color: var(--text);
+}
+.cuentas__toggle-total {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+.cuentas__list--pagadas {
+  margin-top: 8px;
+}
+
+/* ---------- Bar / Mostrador ---------- */
+.mostrador {
+  margin-top: 18px;
+}
+.mostrador__add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mostrador__add .consumos__player {
+  flex: 1;
+}
+.mostrador .cuenta__head {
+  align-items: center;
+}
+.mostrador .cuenta__head .cuenta__total {
+  margin-left: auto;
+}
+.mostrador__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.consumo--mini {
+  grid-template-columns: 1fr auto auto auto;
+  background: var(--surface);
+  padding: 6px 8px;
+}
+.mostrador__addItem {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.mostrador__addItem .consumos__product {
+  flex: 1;
+}
+.btn--ghost-sm {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.btn--ghost-sm:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 /* ---------- Modal de configuración ---------- */

@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { turnoKey, PAGOS, horarioLabel } from '../data/defaults'
+import { turnoKey, horarioLabel } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
 import SlotCell from './SlotCell'
 
@@ -16,7 +16,7 @@ export default function CourtsBoard({ config, planilla, update, loading }) {
   const addPlayer = (canchaId, horarioId) =>
     mutateSlot(turnoKey(canchaId, horarioId), (lista) => [
       ...lista,
-      { id: uid(), jugador: '', monto: '', pago: PAGOS[0].id },
+      { id: uid(), jugador: '', monto: '', pagado: false },
     ])
 
   const updatePlayer = (canchaId, horarioId, id, patch) =>

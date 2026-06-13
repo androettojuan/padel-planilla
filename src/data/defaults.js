@@ -48,9 +48,13 @@ export function horarioLabel(h) {
 }
 
 export function emptyPlanilla() {
-  // turnos: { [`${canchaId}__${horarioId}`]: [{ id, jugador, monto, pago }] }
-  // consumos: [{ id, jugador, productoId, nombre, cantidad, precio, pago }]
-  return { turnos: {}, consumos: [] }
+  // El medio de pago (`pago`) y `pagado` se fijan al confirmar la cuenta del
+  // jugador; mientras la cuenta está pendiente esas líneas tienen pagado=false.
+  // turnos: { [`${canchaId}__${horarioId}`]: [{ id, jugador, monto, pagado, pago }] }
+  // consumos: [{ id, jugador, productoId, nombre, cantidad, precio, pagado, pago }]
+  // mostrador: cuentas de gente que no juega (bar/mostrador), con su propio cobro.
+  //   [{ id, nombre, items: [{ id, productoId, nombre, precio, cantidad }], pagado, pago }]
+  return { turnos: {}, consumos: [], mostrador: [] }
 }
 
 export const turnoKey = (canchaId, horarioId) => `${canchaId}__${horarioId}`
