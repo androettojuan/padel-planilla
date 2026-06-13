@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PAGOS } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
 import PagoSelector from './PagoSelector'
@@ -8,6 +8,18 @@ export default function ConsumosPanel({ config, planilla, update }) {
   const consumos = planilla.consumos || []
   const [productoId, setProductoId] = useState(productos[0]?.id || '')
   const [jugador, setJugador] = useState('')
+
+  // Jugadores ya anotados en la grilla de turnos, para asociar los consumos.
+  const jugadoresCargados = useMemo(() => {
+    const set = new Set()
+    for (const lista of Object.values(planilla.turnos || {})) {
+      for (const t of lista) {
+        const n = (t.jugador || '').trim()
+        if (n) set.add(n)
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [planilla.turnos])
 
   const totalConsumos = consumos.reduce(
     (s, c) => s + (Number(c.precio) || 0) * (Number(c.cantidad) || 0),
@@ -51,10 +63,16 @@ export default function ConsumosPanel({ config, planilla, update }) {
         <input
           className="consumos__player"
           placeholder="Jugador"
+          list="jugadores-cargados"
           value={jugador}
           onChange={(e) => setJugador(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addConsumo()}
         />
+        <datalist id="jugadores-cargados">
+          {jugadoresCargados.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
         <select
           className="consumos__product"
           value={productoId}
