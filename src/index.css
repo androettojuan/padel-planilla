@@ -274,66 +274,80 @@ select {
   color: var(--text-soft);
 }
 
-/* ---------- Courts ---------- */
-.courts__head {
+/* ---------- Encabezado de sección (alinea Turnos / Consumos) ---------- */
+.section-head {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
-}
-.courts__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-.court {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.court__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #15803d, #16a34a);
-  color: #fff;
-}
-.court__name {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-.court__subtotal {
-  font-weight: 700;
-  font-size: 14px;
-}
-.court__slots {
-  padding: 6px;
+  min-height: 24px;
 }
 
-/* ---------- Slot ---------- */
-.slot {
-  padding: 8px;
-  border-radius: var(--radius-sm);
+/* ---------- Grilla de canchas (tipo tabla, horarios alineados) ---------- */
+.courts__scroll {
+  overflow-x: auto;
 }
-.slot + .slot {
-  border-top: 1px solid var(--border);
+.cgrid {
+  display: grid;
+  gap: 8px;
+  align-items: stretch;
+  min-width: min-content;
 }
-.slot__head {
+.cgrid__corner {
+  /* celda vacía sobre la columna de horarios */
+}
+.cgrid__chead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  gap: 8px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
 }
-.slot__time {
+.cgrid__chead-sub {
+  font-size: 14px;
+}
+.cgrid__time {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 700;
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.cgrid__cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  box-shadow: var(--shadow);
+}
+.cell__add {
+  margin-top: 6px;
+  width: 100%;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--primary-dark);
+  border-radius: 8px;
+  padding: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cell__add:hover {
+  background: #dcfce7;
+  border-color: var(--primary);
 }
 .slot__empty {
   width: 100%;
@@ -449,7 +463,7 @@ select {
 }
 
 /* ---------- Consumos ---------- */
-.consumos {
+.consumos__card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -457,12 +471,6 @@ select {
   padding: 16px;
   position: sticky;
   top: 16px;
-}
-.consumos__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 12px;
 }
 .consumos__total {
   font-weight: 800;

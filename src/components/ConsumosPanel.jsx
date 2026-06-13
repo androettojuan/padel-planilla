@@ -41,11 +41,12 @@ export default function ConsumosPanel({ config, planilla, update }) {
 
   return (
     <div className="consumos">
-      <div className="consumos__head">
+      <div className="section-head">
         <h2 className="section-title">Consumos</h2>
         <span className="consumos__total">{formatMoney(totalConsumos)}</span>
       </div>
 
+      <div className="consumos__card">
       <div className="consumos__form">
         <input
           className="consumos__player"
@@ -106,6 +107,7 @@ export default function ConsumosPanel({ config, planilla, update }) {
           ))}
         </ul>
       )}
+      </div>
     </div>
   )
 }
