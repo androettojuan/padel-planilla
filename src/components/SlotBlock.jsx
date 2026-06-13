@@ -1,10 +1,10 @@
 import PagoSelector from './PagoSelector'
 
-export default function SlotBlock({ horario, jugadores, onAdd, onUpdate, onRemove }) {
+export default function SlotBlock({ label, jugadores, onAdd, onUpdate, onRemove }) {
   return (
     <div className="slot">
       <div className="slot__head">
-        <span className="slot__time">{horario.label}</span>
+        <span className="slot__time">{label}</span>
         <button className="btn btn--add" onClick={onAdd}>
           + Jugador
         </button>

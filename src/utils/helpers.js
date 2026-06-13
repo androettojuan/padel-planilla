@@ -37,6 +37,35 @@ export function formatLongDate(dateKey) {
   })
 }
 
+// Normaliza una hora ingresada libremente a "HH:MM".
+// "1430" -> "14:30", "9" -> "09:00", "9:5" -> "09:05". Permite 24:00.
+export function normalizeTime(value) {
+  if (!value) return ''
+  const raw = String(value).trim()
+  if (raw === '') return ''
+  let h
+  let m
+  if (raw.includes(':')) {
+    const [hh, mm = ''] = raw.split(':')
+    h = hh.replace(/\D/g, '')
+    m = mm.replace(/\D/g, '')
+  } else {
+    const digits = raw.replace(/\D/g, '')
+    if (digits.length <= 2) {
+      h = digits
+      m = ''
+    } else {
+      h = digits.slice(0, digits.length - 2)
+      m = digits.slice(-2)
+    }
+  }
+  if (h === '') return ''
+  let hi = Math.min(24, parseInt(h, 10) || 0)
+  let mi = Math.min(59, parseInt(m || '0', 10) || 0)
+  if (hi === 24) mi = 0
+  return `${String(hi).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
+}
+
 export function shiftDateKey(dateKey, days) {
   const [y, m, d] = dateKey.split('-').map(Number)
   const date = new Date(y, m - 1, d)

@@ -1,4 +1,4 @@
-import { turnoKey, PAGOS } from '../data/defaults'
+import { turnoKey, PAGOS, horarioLabel } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
 import SlotBlock from './SlotBlock'
 
@@ -38,7 +38,7 @@ export default function CourtCard({ cancha, horarios, turnos, update }) {
         {horarios.map((h) => (
           <SlotBlock
             key={h.id}
-            horario={h}
+            label={horarioLabel(h)}
             jugadores={turnos[turnoKey(cancha.id, h.id)] || []}
             onAdd={() => addPlayer(h.id)}
             onUpdate={(id, patch) => updatePlayer(h.id, id, patch)}

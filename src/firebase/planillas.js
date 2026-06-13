@@ -2,11 +2,20 @@ import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from './config'
 import { DEFAULT_CONFIG, emptyPlanilla } from '../data/defaults'
 
+const CONFIG_LS_KEY = 'config:club'
+
 // ---------------------------------------------------------------------------
 // Config del club (canchas, horarios, productos). Documento: config/club
 // ---------------------------------------------------------------------------
 export async function loadConfig() {
-  if (!isFirebaseConfigured) return DEFAULT_CONFIG
+  if (!isFirebaseConfigured) {
+    try {
+      const raw = localStorage.getItem(CONFIG_LS_KEY)
+      return raw ? { ...DEFAULT_CONFIG, ...JSON.parse(raw) } : DEFAULT_CONFIG
+    } catch {
+      return DEFAULT_CONFIG
+    }
+  }
   const ref = doc(db, 'config', 'club')
   const snap = await getDoc(ref)
   if (!snap.exists()) {
@@ -14,6 +23,14 @@ export async function loadConfig() {
     return DEFAULT_CONFIG
   }
   return { ...DEFAULT_CONFIG, ...snap.data() }
+}
+
+export async function saveConfig(config) {
+  if (!isFirebaseConfigured) {
+    localStorage.setItem(CONFIG_LS_KEY, JSON.stringify(config))
+    return
+  }
+  await setDoc(doc(db, 'config', 'club'), config, { merge: false })
 }
 
 // ---------------------------------------------------------------------------

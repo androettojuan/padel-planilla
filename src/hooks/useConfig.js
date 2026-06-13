@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { loadConfig } from '../firebase/planillas'
+import { useCallback, useEffect, useState } from 'react'
+import { loadConfig, saveConfig } from '../firebase/planillas'
 import { DEFAULT_CONFIG } from '../data/defaults'
 
 export function useConfig() {
@@ -17,5 +17,10 @@ export function useConfig() {
     }
   }, [])
 
-  return { config, loading }
+  const save = useCallback(async (next) => {
+    setConfig(next) // optimista
+    await saveConfig(next)
+  }, [])
+
+  return { config, loading, saveConfig: save }
 }

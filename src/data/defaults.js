@@ -20,13 +20,13 @@ export const DEFAULT_CONFIG = {
     { id: 'c2', nombre: 'Cancha 2' },
   ],
   horarios: [
-    { id: 'h1', label: '14:00 a 15:30' },
-    { id: 'h2', label: '15:30 a 17:00' },
-    { id: 'h3', label: '17:00 a 18:30' },
-    { id: 'h4', label: '18:30 a 20:00' },
-    { id: 'h5', label: '20:00 a 21:30' },
-    { id: 'h6', label: '21:30 a 23:00' },
-    { id: 'h7', label: '22:30 a 24:00' },
+    { id: 'h1', desde: '14:00', hasta: '15:30' },
+    { id: 'h2', desde: '15:30', hasta: '17:00' },
+    { id: 'h3', desde: '17:00', hasta: '18:30' },
+    { id: 'h4', desde: '18:30', hasta: '20:00' },
+    { id: 'h5', desde: '20:00', hasta: '21:30' },
+    { id: 'h6', desde: '21:30', hasta: '23:00' },
+    { id: 'h7', desde: '22:30', hasta: '24:00' },
   ],
   productos: [
     { id: 'p1', nombre: 'Cerveza', precio: 6000 },
@@ -37,6 +37,14 @@ export const DEFAULT_CONFIG = {
     { id: 'p6', nombre: 'Alquiler paletas', precio: 3000 },
     { id: 'p7', nombre: 'Tubo de pelotas', precio: 12000 },
   ],
+}
+
+// Etiqueta legible de una franja. Soporta el formato nuevo (desde/hasta) y el
+// viejo (label) por compatibilidad con datos ya guardados.
+export function horarioLabel(h) {
+  if (!h) return ''
+  if (h.desde || h.hasta) return `${h.desde || '?'} a ${h.hasta || '?'}`
+  return h.label || ''
 }
 
 export function emptyPlanilla() {

@@ -7,13 +7,15 @@ import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
 import ConsumosPanel from './components/ConsumosPanel'
+import ConfigModal from './components/ConfigModal'
 
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
   const [authReady, setAuthReady] = useState(!isFirebaseConfigured)
   const [authError, setAuthError] = useState(null)
+  const [configOpen, setConfigOpen] = useState(false)
 
-  const { config } = useConfig()
+  const { config, saveConfig } = useConfig()
   const { planilla, update, loading, error } = usePlanilla(dateKey)
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header club={config.club} totals={totals} />
+      <Header club={config.club} totals={totals} onOpenConfig={() => setConfigOpen(true)} />
 
       {!isFirebaseConfigured && (
         <div className="banner banner--warn">
@@ -55,6 +57,10 @@ export default function App() {
         </main>
       ) : (
         <div className="loading">Conectando…</div>
+      )}
+
+      {configOpen && (
+        <ConfigModal config={config} onSave={saveConfig} onClose={() => setConfigOpen(false)} />
       )}
     </div>
   )

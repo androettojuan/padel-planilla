@@ -1,6 +1,6 @@
 import { formatMoney } from '../utils/helpers'
 
-export default function Header({ club, totals }) {
+export default function Header({ club, totals, onOpenConfig }) {
   return (
     <header className="header">
       <div className="header__brand">
@@ -10,9 +10,14 @@ export default function Header({ club, totals }) {
           {club?.ubicacion && <p className="header__subtitle">{club.ubicacion}</p>}
         </div>
       </div>
-      <div className="header__total">
-        <span className="header__total-label">Total del día</span>
-        <span className="header__total-value">{formatMoney(totals.total)}</span>
+      <div className="header__right">
+        <div className="header__total">
+          <span className="header__total-label">Total del día</span>
+          <span className="header__total-value">{formatMoney(totals.total)}</span>
+        </div>
+        <button className="header__config" onClick={onOpenConfig} aria-label="Configuración" title="Configuración">
+          ⚙
+        </button>
       </div>
     </header>
   )
