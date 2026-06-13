@@ -1,6 +1,16 @@
+import { useState } from 'react'
 import PagoSelector from './PagoSelector'
 
 export default function SlotBlock({ label, jugadores, onAdd, onUpdate, onRemove }) {
+  const [confirmId, setConfirmId] = useState(null)
+
+  const requestRemove = (j) => {
+    // Si la fila está vacía no tiene sentido pedir confirmación.
+    const hasData = (j.jugador || '').trim() || String(j.monto || '').trim()
+    if (hasData) setConfirmId(j.id)
+    else onRemove(j.id)
+  }
+
   return (
     <div className="slot">
       <div className="slot__head">
@@ -32,9 +42,33 @@ export default function SlotBlock({ label, jugadores, onAdd, onUpdate, onRemove 
                 onChange={(e) => onUpdate(j.id, { monto: e.target.value.replace(/[^\d]/g, '') })}
               />
               <PagoSelector value={j.pago} size="sm" onChange={(pago) => onUpdate(j.id, { pago })} />
-              <button className="player__del" onClick={() => onRemove(j.id)} aria-label="Quitar">
-                ×
-              </button>
+              {confirmId === j.id ? (
+                <div className="confirm-inline">
+                  <button
+                    className="confirm-inline__yes"
+                    onClick={() => {
+                      onRemove(j.id)
+                      setConfirmId(null)
+                    }}
+                    aria-label="Confirmar"
+                    title="Borrar"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    className="confirm-inline__no"
+                    onClick={() => setConfirmId(null)}
+                    aria-label="Cancelar"
+                    title="Cancelar"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button className="player__del" onClick={() => requestRemove(j)} aria-label="Quitar">
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>

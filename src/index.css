@@ -400,6 +400,36 @@ select {
   color: #dc2626;
 }
 
+/* ---------- Confirmación inline ---------- */
+.confirm-inline {
+  display: flex;
+  gap: 3px;
+}
+.confirm-inline__yes,
+.confirm-inline__no {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+}
+.confirm-inline__yes {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.confirm-inline__yes:hover {
+  background: #dc2626;
+  color: #fff;
+}
+.confirm-inline__no {
+  background: var(--surface-2);
+  color: var(--text-soft);
+}
+.confirm-inline__no:hover {
+  background: var(--border);
+}
+
 /* ---------- Pago chip ---------- */
 .pago {
   border: 1px solid color-mix(in srgb, var(--pago-color) 40%, transparent);
