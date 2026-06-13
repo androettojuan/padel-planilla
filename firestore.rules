@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Uso interno del club: cualquier sesión autenticada (incluida la anónima que
+// inicia la app automáticamente) puede leer y escribir. Si más adelante sumás
+// login real, podés restringir por uid o por custom claims.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
