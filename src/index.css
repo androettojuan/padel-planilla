@@ -273,6 +273,78 @@ select {
   text-align: center;
   color: var(--text-soft);
 }
+.loading--full {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Login ---------- */
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+.login__card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.4);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+.login__logo {
+  height: 64px;
+  width: auto;
+  margin-bottom: 12px;
+}
+.login__title {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.login__text {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.login__hint {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.login__google {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  font-size: 15px;
+  margin-top: 8px;
+}
+.login__google-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: #4285f4;
+  font-weight: 800;
+  font-size: 14px;
+}
+.login__error {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: #dc2626;
+}
 
 /* ---------- Encabezado de sección (alinea Turnos / Consumos) ---------- */
 .section-head {

@@ -1,6 +1,6 @@
 import { formatMoney } from '../utils/helpers'
 
-export default function Header({ club, totals, onOpenConfig }) {
+export default function Header({ club, totals, user, onSignOut, onOpenConfig }) {
   return (
     <header className="header">
       <div className="header__brand">
@@ -18,6 +18,16 @@ export default function Header({ club, totals, onOpenConfig }) {
         <button className="header__config" onClick={onOpenConfig} aria-label="Configuración" title="Configuración">
           ⚙
         </button>
+        {user && onSignOut && (
+          <button
+            className="header__config"
+            onClick={onSignOut}
+            aria-label="Cerrar sesión"
+            title={`Cerrar sesión (${user.email})`}
+          >
+            ⎋
+          </button>
+        )}
       </div>
     </header>
   )

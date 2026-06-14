@@ -8,7 +8,7 @@ import { emptyPlanilla } from '../data/defaults'
  * conflictos: el último guardado gana. La suscripción mantiene sincronizado el
  * estado cuando el documento cambia y no hay ediciones locales pendientes.
  */
-export function usePlanilla(dateKey) {
+export function usePlanilla(dateKey, enabled = true) {
   const [planilla, setPlanilla] = useState(emptyPlanilla())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -19,6 +19,7 @@ export function usePlanilla(dateKey) {
   planillaRef.current = planilla
 
   useEffect(() => {
+    if (!enabled) return
     setLoading(true)
     dirtyRef.current = false
     const unsub = subscribePlanilla(
@@ -37,7 +38,7 @@ export function usePlanilla(dateKey) {
       unsub()
       if (saveTimer.current) clearTimeout(saveTimer.current)
     }
-  }, [dateKey])
+  }, [dateKey, enabled])
 
   const persist = useCallback(
     (next) => {

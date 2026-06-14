@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,23 +23,25 @@ const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null
 export const db = app ? getFirestore(app) : null
 export const auth = app ? getAuth(app) : null
 
-// Uso interno sin login: iniciamos sesión anónima automáticamente para que
-// las reglas de Firestore puedan exigir auth sin mostrar una pantalla de login.
-export function ensureAuth() {
-  return new Promise((resolve, reject) => {
-    if (!auth) {
-      resolve(null)
-      return
-    }
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        unsub()
-        resolve(user)
-      }
-    })
-    signInAnonymously(auth).catch((err) => {
-      unsub()
-      reject(err)
-    })
-  })
+const googleProvider = new GoogleAuthProvider()
+
+// Login con Google. El acceso real lo controla la allowlist + las reglas de
+// Firestore; acá solo autenticamos al usuario.
+export function signInWithGoogle() {
+  if (!auth) return Promise.resolve(null)
+  return signInWithPopup(auth, googleProvider)
+}
+
+export function signOutUser() {
+  if (!auth) return Promise.resolve()
+  return signOut(auth)
+}
+
+// Notifica el usuario actual (o null) cada vez que cambia el estado de sesión.
+export function subscribeAuth(cb) {
+  if (!auth) {
+    cb(null)
+    return () => {}
+  }
+  return onAuthStateChanged(auth, cb)
 }
