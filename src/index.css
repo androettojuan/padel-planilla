@@ -1121,3 +1121,41 @@ select {
   display: flex;
   gap: 3px;
 }
+
+/* ---------- Autocomplete de nombres ---------- */
+.nombre-input {
+  position: relative;
+  width: 100%;
+}
+.mostrador__add .nombre-input {
+  flex: 1;
+}
+.nombre-sug {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.nombre-sug__item {
+  padding: 7px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nombre-sug__item.is-active,
+.nombre-sug__item:hover {
+  background: rgba(22, 163, 74, 0.12);
+}
+.btn--ghost-sm.is-off {
+  opacity: 0.6;
+}

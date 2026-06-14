@@ -13,7 +13,7 @@ const ensureLen = (lista, n) => {
   return out
 }
 
-export default function CourtsBoard({ config, horarios, planilla, update, loading }) {
+export default function CourtsBoard({ config, horarios, planilla, update, loading, sugerencias, onCommitNombre }) {
   const { canchas } = config
   const turnos = planilla.turnos || {}
 
@@ -77,6 +77,8 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
                   onAdd={() => addPlayer(c.id, h.id)}
                   onUpdate={(index, patch) => updatePlayer(c.id, h.id, index, patch)}
                   onRemove={(index) => removePlayer(c.id, h.id, index)}
+                  sugerencias={sugerencias}
+                  onCommitNombre={onCommitNombre}
                 />
               ))}
             </Fragment>

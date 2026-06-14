@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { PAGOS_BY_ID } from '../data/defaults'
+import NombreInput from './NombreInput'
 
 // Cada turno muestra siempre al menos esta cantidad de jugadores.
 export const MIN_JUGADORES = 4
 
-export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove }) {
+export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove, sugerencias, onCommitNombre }) {
   // Índice de la fila con la confirmación de borrado abierta.
   const [confirmIdx, setConfirmIdx] = useState(null)
 
@@ -30,12 +31,14 @@ export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove }) {
             // key por índice: al materializar una fila fantasma el input no se
             // remonta y no se pierde el foco mientras se escribe.
             <li className={`player ${val.pagado ? 'player--pagado' : ''}`} key={index}>
-              <input
+              <NombreInput
                 className="player__name"
                 placeholder="Nombre"
                 value={val.jugador}
                 disabled={val.pagado}
-                onChange={(e) => onUpdate(index, { jugador: e.target.value })}
+                sugerencias={sugerencias}
+                onChange={(v) => onUpdate(index, { jugador: v })}
+                onCommit={onCommitNombre}
               />
               <input
                 className="player__money"

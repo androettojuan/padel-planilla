@@ -3,6 +3,18 @@ export function uid() {
   return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
+// Clave para comparar/deduplicar nombres: ignora mayúsculas/minúsculas, acentos,
+// comas y espacios de más. "Pérez, Juan" y "perez juan" dan la misma clave.
+export function normalizeNombre(nombre) {
+  return (nombre || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // saca diacríticos (acentos, diéresis…)
+    .toLowerCase()
+    .replace(/,/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const money = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',

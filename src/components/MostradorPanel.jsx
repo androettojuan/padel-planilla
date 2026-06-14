@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { PAGOS, PAGOS_BY_ID } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
+import NombreInput from './NombreInput'
 
 // Cuentas de gente que no está jugando (bar / mostrador). Cada cuenta es
 // independiente: tiene sus propios consumos y se cobra por separado.
-export default function MostradorPanel({ config, planilla, update }) {
+export default function MostradorPanel({ config, planilla, update, sugerencias, onCommitNombre }) {
   const productos = config.productos || []
   const cuentas = planilla.mostrador || []
   const [nombre, setNombre] = useState('')
@@ -66,12 +67,14 @@ export default function MostradorPanel({ config, planilla, update }) {
 
       <div className="cuentas__card">
         <div className="mostrador__add">
-          <input
+          <NombreInput
             className="consumos__player"
             placeholder="Nombre o mesa (no juega)"
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addCuenta()}
+            sugerencias={sugerencias}
+            onChange={setNombre}
+            onCommit={onCommitNombre}
+            onEnter={addCuenta}
           />
           <button className="btn btn--primary" onClick={addCuenta}>
             Agregar

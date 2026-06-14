@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { isFirebaseConfigured } from './firebase/config'
 import { useAuth } from './hooks/useAuth'
 import { useConfig } from './hooks/useConfig'
+import { useJugadores } from './hooks/useJugadores'
 import { usePlanilla } from './hooks/usePlanilla'
 import { todayKey } from './utils/helpers'
 import { horariosForDate, DEFAULT_CONFIG } from './data/defaults'
@@ -23,10 +24,13 @@ export default function App() {
   const { user, authorized, loading: authLoading, error: authError, signIn, signOut } = useAuth()
 
   const { config, saveConfig } = useConfig(authorized)
+  const { jugadores, saveJugador, deleteJugador, upsertNombre } = useJugadores(authorized)
   const { planilla, update, loading, error } = usePlanilla(dateKey, authorized)
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
   const horarios = useMemo(() => horariosForDate(config, dateKey), [config, dateKey])
+  // Sugerencias para autocompletar: directorio (activos) + nombres ya usados hoy.
+  const sugerencias = useMemo(() => computeSugerencias(jugadores, planilla), [jugadores, planilla])
 
   // Antes de autorizar: pantalla de carga / login / no autorizado.
   if (authLoading) {
@@ -73,17 +77,44 @@ export default function App() {
 
       <main className="layout">
         <section className="layout__courts">
-          <CourtsBoard config={config} horarios={horarios} planilla={planilla} update={update} loading={loading} />
+          <CourtsBoard
+            config={config}
+            horarios={horarios}
+            planilla={planilla}
+            update={update}
+            loading={loading}
+            sugerencias={sugerencias}
+            onCommitNombre={upsertNombre}
+          />
         </section>
         <aside className="layout__consumos">
           <CuentasPanel config={config} planilla={planilla} update={update} />
-          <ConsumosPanel config={config} planilla={planilla} update={update} />
-          <MostradorPanel config={config} planilla={planilla} update={update} />
+          <ConsumosPanel
+            config={config}
+            planilla={planilla}
+            update={update}
+            sugerencias={sugerencias}
+            onCommitNombre={upsertNombre}
+          />
+          <MostradorPanel
+            config={config}
+            planilla={planilla}
+            update={update}
+            sugerencias={sugerencias}
+            onCommitNombre={upsertNombre}
+          />
         </aside>
       </main>
 
       {configOpen && (
-        <ConfigModal config={config} onSave={saveConfig} onClose={() => setConfigOpen(false)} />
+        <ConfigModal
+          config={config}
+          onSave={saveConfig}
+          onClose={() => setConfigOpen(false)}
+          jugadores={jugadores}
+          onSaveJugador={saveJugador}
+          onDeleteJugador={deleteJugador}
+        />
       )}
 
       {resumenOpen && (
@@ -91,6 +122,27 @@ export default function App() {
       )}
     </div>
   )
+}
+
+// Lista de nombres para autocompletar: jugadores activos del directorio más los
+// nombres que ya aparecen en la planilla del día (turnos, consumos, mostrador).
+// Se dedupe sin distinguir mayúsculas y se ordena alfabéticamente.
+function computeSugerencias(jugadores, planilla) {
+  const map = new Map() // clave normalizada -> nombre a mostrar
+  const add = (nombre) => {
+    const n = (nombre || '').trim()
+    if (n && !map.has(n.toLowerCase())) map.set(n.toLowerCase(), n)
+  }
+  for (const j of jugadores || []) {
+    if (j.activo === false) continue
+    add(j.nombre)
+  }
+  for (const lista of Object.values(planilla.turnos || {})) {
+    for (const t of lista) add(t.jugador)
+  }
+  for (const c of planilla.consumos || []) add(c.jugador)
+  for (const tab of planilla.mostrador || []) add(tab.nombre)
+  return Array.from(map.values()).sort((a, b) => a.localeCompare(b))
 }
 
 // El desglose por medio (contado/mercado/anotado) cuenta solo las líneas ya

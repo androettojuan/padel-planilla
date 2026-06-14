@@ -1,26 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { PAGOS_BY_ID } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
+import NombreInput from './NombreInput'
 
-export default function ConsumosPanel({ config, planilla, update }) {
+export default function ConsumosPanel({ config, planilla, update, sugerencias, onCommitNombre }) {
   const productos = config.productos || []
   // Solo se listan los consumos sin cobrar; al cerrar la cuenta del jugador
   // quedan pagados y salen de esta vista (siguen sumando en los totales del día).
   const consumos = (planilla.consumos || []).filter((c) => !c.pagado)
   const [productoId, setProductoId] = useState(productos[0]?.id || '')
   const [jugador, setJugador] = useState('')
-
-  // Jugadores ya anotados en la grilla de turnos, para asociar los consumos.
-  const jugadoresCargados = useMemo(() => {
-    const set = new Set()
-    for (const lista of Object.values(planilla.turnos || {})) {
-      for (const t of lista) {
-        const n = (t.jugador || '').trim()
-        if (n) set.add(n)
-      }
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b))
-  }, [planilla.turnos])
 
   const totalConsumos = consumos.reduce(
     (s, c) => s + (Number(c.precio) || 0) * (Number(c.cantidad) || 0),
@@ -61,19 +50,15 @@ export default function ConsumosPanel({ config, planilla, update }) {
 
       <div className="consumos__card">
       <div className="consumos__form">
-        <input
+        <NombreInput
           className="consumos__player"
           placeholder="Jugador"
-          list="jugadores-cargados"
           value={jugador}
-          onChange={(e) => setJugador(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addConsumo()}
+          sugerencias={sugerencias}
+          onChange={setJugador}
+          onCommit={onCommitNombre}
+          onEnter={addConsumo}
         />
-        <datalist id="jugadores-cargados">
-          {jugadoresCargados.map((n) => (
-            <option key={n} value={n} />
-          ))}
-        </datalist>
         <select
           className="consumos__product"
           value={productoId}

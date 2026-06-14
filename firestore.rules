@@ -19,6 +19,10 @@ service cloud.firestore {
       allow read, write: if isAllowed();
     }
 
+    match /jugadores/{doc} {
+      allow read, write: if isAllowed();
+    }
+
     // Cada usuario puede consultar solo su propia entrada (para saber si está
     // habilitado). El alta/baja se hace desde la consola, nunca desde la app.
     match /allowlist/{email} {
