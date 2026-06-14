@@ -105,3 +105,24 @@ export async function loadMonth(monthKey) {
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ dateKey: d.id, data: d.data() }))
 }
+
+// Trae todas las planillas (sin filtro de mes). Lo usa el cálculo de saldos /
+// fiados, que necesita sumar lo "anotado" a lo largo de todo el historial.
+export async function loadAllPlanillas() {
+  if (!isFirebaseConfigured) {
+    const out = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('planilla:')) {
+        try {
+          out.push({ dateKey: k.slice('planilla:'.length), data: JSON.parse(localStorage.getItem(k)) })
+        } catch {
+          /* ignoramos entradas corruptas */
+        }
+      }
+    }
+    return out.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+  }
+  const snap = await getDocs(query(collection(db, 'planillas'), orderBy(documentId())))
+  return snap.docs.map((d) => ({ dateKey: d.id, data: d.data() }))
+}

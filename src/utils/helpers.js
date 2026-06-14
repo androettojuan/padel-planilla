@@ -78,6 +78,12 @@ export function normalizeTime(value) {
   return `${String(hi).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
 }
 
+// "01/06/26" — fecha numérica corta (incluye año, para deudas de meses viejos).
+export function formatDateNumeric(dateKey) {
+  const [y, m, d] = dateKey.split('-')
+  return `${d}/${m}/${y.slice(2)}`
+}
+
 // "sáb 13" — etiqueta corta para filas por día.
 export function formatDayShort(dateKey) {
   const [y, m, d] = dateKey.split('-').map(Number)

@@ -1159,3 +1159,123 @@ select {
 .btn--ghost-sm.is-off {
   opacity: 0.6;
 }
+
+/* ---------- Saldos / Fiados ---------- */
+.saldos__search {
+  width: 100%;
+  margin: 4px 0 14px;
+}
+.saldo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.saldo-item {
+  border-bottom: 1px solid var(--border);
+}
+.saldo-item__main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.saldo-item__chev {
+  color: var(--text-soft);
+  width: 12px;
+  flex: none;
+}
+.saldo-item__name {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saldo-item__amount {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.saldo-item__amount.is-favor {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+.saldo-item__body {
+  padding: 0 2px 12px;
+}
+.saldo__detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0 8px;
+  padding: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.saldo__mov {
+  display: grid;
+  grid-template-columns: 60px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.saldo__mov-fecha {
+  color: var(--text-soft);
+}
+.saldo__mov-concepto {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saldo__mov-monto {
+  font-weight: 700;
+  text-align: right;
+}
+.saldo__mov--pago .saldo__mov-monto {
+  color: var(--primary-dark);
+}
+.saldo__cobro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.saldo__pagar {
+  margin-top: 4px;
+}
+.saldos__add {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.saldo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.saldo-form__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.saldo-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.saldo__tag {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-style: italic;
+}

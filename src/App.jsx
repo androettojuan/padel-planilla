@@ -14,12 +14,14 @@ import CuentasPanel from './components/CuentasPanel'
 import MostradorPanel from './components/MostradorPanel'
 import ConfigModal from './components/ConfigModal'
 import ResumenMensualModal from './components/ResumenMensualModal'
+import SaldosModal from './components/SaldosModal'
 import LoginScreen from './components/LoginScreen'
 
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
   const [configOpen, setConfigOpen] = useState(false)
   const [resumenOpen, setResumenOpen] = useState(false)
+  const [saldosOpen, setSaldosOpen] = useState(false)
 
   const { user, authorized, loading: authLoading, error: authError, signIn, signOut } = useAuth()
 
@@ -73,6 +75,7 @@ export default function App() {
         onChange={setDateKey}
         totals={totals}
         onOpenResumen={() => setResumenOpen(true)}
+        onOpenSaldos={() => setSaldosOpen(true)}
       />
 
       <main className="layout">
@@ -119,6 +122,15 @@ export default function App() {
 
       {resumenOpen && (
         <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
+      )}
+
+      {saldosOpen && (
+        <SaldosModal
+          jugadores={jugadores}
+          sugerencias={sugerencias}
+          onCommitNombre={upsertNombre}
+          onClose={() => setSaldosOpen(false)}
+        />
       )}
     </div>
   )
