@@ -213,6 +213,14 @@ select {
 .btn:hover {
   background: var(--surface-2);
 }
+.btn:disabled,
+.btn:disabled:hover {
+  background: var(--surface-2);
+  color: var(--text-soft);
+  border-color: var(--border);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 .btn--ghost {
   width: 36px;
   height: 36px;

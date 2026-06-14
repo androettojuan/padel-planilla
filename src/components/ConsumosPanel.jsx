@@ -19,6 +19,7 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
   const addConsumo = () => {
     const prod = productos.find((p) => p.id === productoId)
     if (!prod) return
+    if (!jugador.trim()) return // un consumo siempre va asociado a un jugador
     const nuevo = {
       id: uid(),
       jugador: jugador.trim(),
@@ -70,7 +71,7 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
             </option>
           ))}
         </select>
-        <button className="btn btn--primary" onClick={addConsumo}>
+        <button className="btn btn--primary" onClick={addConsumo} disabled={!jugador.trim()}>
           Agregar
         </button>
       </div>
