@@ -835,6 +835,48 @@ select {
   font-size: 12px;
   color: var(--text-soft);
 }
+/* Pestañas de día de la semana para horarios */
+.cfg-dows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cfg-dow {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  position: relative;
+}
+.cfg-dow:hover {
+  background: var(--surface-2);
+}
+.cfg-dow.is-active {
+  background: var(--bg);
+  border-color: var(--bg);
+  color: #fff;
+}
+/* Punto indicador cuando ese día tiene horario propio */
+.cfg-dow.has-override::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.cfg-dow.has-override.is-active::after {
+  background: #4ade80;
+}
+.cfg-dow-actions {
+  margin-bottom: 10px;
+}
 .cfg-row {
   display: flex;
   align-items: center;

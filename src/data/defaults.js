@@ -47,6 +47,19 @@ export function horarioLabel(h) {
   return h.label || ''
 }
 
+// Franjas horarias efectivas para una fecha: si ese día de la semana tiene un
+// override en config.horariosByDow se usa ese; si no, el horario por defecto.
+// dow: 0=domingo … 6=sábado (Date.getDay()).
+export function horariosForDate(config, dateKey) {
+  const byDow = config?.horariosByDow
+  if (byDow && dateKey) {
+    const [y, m, d] = dateKey.split('-').map(Number)
+    const dow = new Date(y, m - 1, d).getDay()
+    if (Array.isArray(byDow[dow])) return byDow[dow]
+  }
+  return config?.horarios || []
+}
+
 export function emptyPlanilla() {
   // El medio de pago (`pago`) y `pagado` se fijan al confirmar la cuenta del
   // jugador; mientras la cuenta está pendiente esas líneas tienen pagado=false.

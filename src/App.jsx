@@ -3,6 +3,7 @@ import { ensureAuth, isFirebaseConfigured } from './firebase/config'
 import { useConfig } from './hooks/useConfig'
 import { usePlanilla } from './hooks/usePlanilla'
 import { todayKey } from './utils/helpers'
+import { horariosForDate } from './data/defaults'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -28,6 +29,7 @@ export default function App() {
   }, [])
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
+  const horarios = useMemo(() => horariosForDate(config, dateKey), [config, dateKey])
 
   return (
     <div className="app">
@@ -51,7 +53,7 @@ export default function App() {
       {authReady ? (
         <main className="layout">
           <section className="layout__courts">
-            <CourtsBoard config={config} planilla={planilla} update={update} loading={loading} />
+            <CourtsBoard config={config} horarios={horarios} planilla={planilla} update={update} loading={loading} />
           </section>
           <aside className="layout__consumos">
             <CuentasPanel config={config} planilla={planilla} update={update} />

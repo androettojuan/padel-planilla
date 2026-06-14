@@ -13,8 +13,8 @@ const ensureLen = (lista, n) => {
   return out
 }
 
-export default function CourtsBoard({ config, planilla, update, loading }) {
-  const { canchas, horarios } = config
+export default function CourtsBoard({ config, horarios, planilla, update, loading }) {
+  const { canchas } = config
   const turnos = planilla.turnos || {}
 
   const mutateSlot = (key, fn) =>
