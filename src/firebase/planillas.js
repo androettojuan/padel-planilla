@@ -1,4 +1,16 @@
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
+import {
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot,
+  collection,
+  query,
+  orderBy,
+  startAt,
+  endAt,
+  getDocs,
+  documentId,
+} from 'firebase/firestore'
 import { db, isFirebaseConfigured } from './config'
 import { DEFAULT_CONFIG, emptyPlanilla } from '../data/defaults'
 
@@ -64,4 +76,32 @@ export async function savePlanilla(dateKey, planilla) {
   }
   const ref = doc(db, 'planillas', dateKey)
   await setDoc(ref, planilla, { merge: false })
+}
+
+// Trae todas las planillas de un mes ("YYYY-MM"). Devuelve [{ dateKey, data }].
+export async function loadMonth(monthKey) {
+  if (!isFirebaseConfigured) {
+    const out = []
+    const prefix = `${lsKey(monthKey)}` // "planilla:YYYY-MM"
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(prefix)) {
+        try {
+          out.push({ dateKey: k.slice('planilla:'.length), data: JSON.parse(localStorage.getItem(k)) })
+        } catch {
+          /* ignoramos entradas corruptas */
+        }
+      }
+    }
+    return out.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+  }
+  // Los doc id son "YYYY-MM-DD"; filtramos por rango sobre el id del documento.
+  const q = query(
+    collection(db, 'planillas'),
+    orderBy(documentId()),
+    startAt(`${monthKey}-01`),
+    endAt(`${monthKey}-`),
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ dateKey: d.id, data: d.data() }))
 }

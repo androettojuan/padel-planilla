@@ -755,6 +755,138 @@ select {
   color: var(--text);
 }
 
+/* ---------- Resumen mensual ---------- */
+.resumen__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 6px 0 16px;
+}
+.resumen__mes {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: capitalize;
+  min-width: 160px;
+  text-align: center;
+}
+.resumen__estado {
+  text-align: center;
+  padding: 24px 0;
+}
+.resumen__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.resumen__total-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+.resumen__total-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #4ade80;
+}
+.resumen__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.resumen__card {
+  border: 1px solid color-mix(in srgb, var(--pago-color) 40%, transparent);
+  background: color-mix(in srgb, var(--pago-color) 8%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.resumen__card-label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.resumen__card-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--pago-color);
+}
+.resumen__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.resumen__tabla th,
+.resumen__tabla td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.resumen__tabla th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-soft);
+  font-weight: 700;
+}
+.resumen__tabla th:first-child,
+.resumen__dia {
+  text-align: left !important;
+  text-transform: capitalize;
+}
+.resumen__td-total {
+  font-weight: 700;
+}
+.resumen__anotado-total {
+  font-weight: 800;
+  color: #b45309;
+}
+.resumen__anotado {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.resumen__anotado-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+.resumen__anotado-fecha {
+  color: var(--text-soft);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.resumen__anotado-nombre {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resumen__anotado-concepto {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.resumen__anotado-monto {
+  font-weight: 700;
+  color: #b45309;
+}
+
 /* ---------- Modal de configuración ---------- */
 .modal-overlay {
   position: fixed;

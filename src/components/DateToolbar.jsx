@@ -1,7 +1,7 @@
 import { PAGOS } from '../data/defaults'
 import { formatLongDate, formatMoney, shiftDateKey, todayKey } from '../utils/helpers'
 
-export default function DateToolbar({ dateKey, onChange, totals }) {
+export default function DateToolbar({ dateKey, onChange, totals, onOpenResumen }) {
   return (
     <div className="toolbar">
       <div className="toolbar__date">
@@ -22,6 +22,9 @@ export default function DateToolbar({ dateKey, onChange, totals }) {
         </button>
         <button className="btn btn--today" onClick={() => onChange(todayKey())}>
           Hoy
+        </button>
+        <button className="btn" onClick={onOpenResumen} title="Resumen del mes">
+          📊 Mes
         </button>
       </div>
 

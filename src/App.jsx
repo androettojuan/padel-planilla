@@ -11,12 +11,14 @@ import ConsumosPanel from './components/ConsumosPanel'
 import CuentasPanel from './components/CuentasPanel'
 import MostradorPanel from './components/MostradorPanel'
 import ConfigModal from './components/ConfigModal'
+import ResumenMensualModal from './components/ResumenMensualModal'
 
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
   const [authReady, setAuthReady] = useState(!isFirebaseConfigured)
   const [authError, setAuthError] = useState(null)
   const [configOpen, setConfigOpen] = useState(false)
+  const [resumenOpen, setResumenOpen] = useState(false)
 
   const { config, saveConfig } = useConfig()
   const { planilla, update, loading, error } = usePlanilla(dateKey)
@@ -48,7 +50,12 @@ export default function App() {
         <div className="banner banner--error">Error al leer/guardar la planilla: {error.message}</div>
       )}
 
-      <DateToolbar dateKey={dateKey} onChange={setDateKey} totals={totals} />
+      <DateToolbar
+        dateKey={dateKey}
+        onChange={setDateKey}
+        totals={totals}
+        onOpenResumen={() => setResumenOpen(true)}
+      />
 
       {authReady ? (
         <main className="layout">
@@ -67,6 +74,10 @@ export default function App() {
 
       {configOpen && (
         <ConfigModal config={config} onSave={saveConfig} onClose={() => setConfigOpen(false)} />
+      )}
+
+      {resumenOpen && (
+        <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
       )}
     </div>
   )

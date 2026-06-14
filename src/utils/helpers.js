@@ -66,6 +66,25 @@ export function normalizeTime(value) {
   return `${String(hi).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
 }
 
+// "sáb 13" — etiqueta corta para filas por día.
+export function formatDayShort(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
+}
+
+// "junio 2026" a partir de "YYYY-MM".
+export function formatMonth(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+}
+
+// Desplaza un "YYYY-MM" por delta meses.
+export function shiftMonth(monthKey, delta) {
+  const [y, m] = monthKey.split('-').map(Number)
+  const date = new Date(y, m - 1 + delta, 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
 export function shiftDateKey(dateKey, days) {
   const [y, m, d] = dateKey.split('-').map(Number)
   const date = new Date(y, m - 1, d)
