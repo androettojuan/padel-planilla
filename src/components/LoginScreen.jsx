@@ -9,7 +9,7 @@ export default function LoginScreen({ user, onSignIn, onSignOut, error, club }) 
       <div className="login__card">
         <img
           className="login__logo"
-          src={`${import.meta.env.BASE_URL}logo.png`}
+          src={`${import.meta.env.BASE_URL}logo.svg`}
           alt=""
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />
