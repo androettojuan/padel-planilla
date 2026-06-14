@@ -4,7 +4,7 @@ export default function Header({ club, totals, user, onSignOut, onOpenConfig }) 
   return (
     <header className="header">
       <div className="header__brand">
-        <img className="header__logo" src="/logo.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img className="header__logo" src={`${import.meta.env.BASE_URL}logo.png`} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
         <div>
           <h1 className="header__title">{club?.nombre || 'Planilla de Turnos'}</h1>
           {club?.ubicacion && <p className="header__subtitle">{club.ubicacion}</p>}
