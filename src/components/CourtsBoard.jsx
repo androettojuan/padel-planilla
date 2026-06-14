@@ -1,7 +1,17 @@
 import { Fragment } from 'react'
 import { turnoKey, horarioLabel } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
-import SlotCell from './SlotCell'
+import SlotCell, { MIN_JUGADORES } from './SlotCell'
+
+const freshPlayer = () => ({ id: uid(), jugador: '', monto: '', pagado: false })
+
+// Asegura que la lista tenga al menos n jugadores, rellenando con vacíos.
+const ensureLen = (lista, n) => {
+  if (lista.length >= n) return lista
+  const out = lista.slice()
+  while (out.length < n) out.push(freshPlayer())
+  return out
+}
 
 export default function CourtsBoard({ config, planilla, update, loading }) {
   const { canchas, horarios } = config
@@ -13,19 +23,23 @@ export default function CourtsBoard({ config, planilla, update, loading }) {
       return { ...prev, turnos: { ...prev.turnos, [key]: fn(lista) } }
     })
 
+  // El "+ Jugador" agrega uno extra por encima de los 4 fijos.
   const addPlayer = (canchaId, horarioId) =>
     mutateSlot(turnoKey(canchaId, horarioId), (lista) => [
-      ...lista,
-      { id: uid(), jugador: '', monto: '', pagado: false },
+      ...ensureLen(lista, MIN_JUGADORES),
+      freshPlayer(),
     ])
 
-  const updatePlayer = (canchaId, horarioId, id, patch) =>
+  // Update por índice: al escribir en una fila fantasma se materializan los 4.
+  const updatePlayer = (canchaId, horarioId, index, patch) =>
     mutateSlot(turnoKey(canchaId, horarioId), (lista) =>
-      lista.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      ensureLen(lista, Math.max(MIN_JUGADORES, index + 1)).map((t, i) =>
+        i === index ? { ...t, ...patch } : t,
+      ),
     )
 
-  const removePlayer = (canchaId, horarioId, id) =>
-    mutateSlot(turnoKey(canchaId, horarioId), (lista) => lista.filter((t) => t.id !== id))
+  const removePlayer = (canchaId, horarioId, index) =>
+    mutateSlot(turnoKey(canchaId, horarioId), (lista) => lista.filter((_, i) => i !== index))
 
   const subtotal = (canchaId) =>
     horarios.reduce(
@@ -61,8 +75,8 @@ export default function CourtsBoard({ config, planilla, update, loading }) {
                   key={c.id}
                   jugadores={turnos[turnoKey(c.id, h.id)] || []}
                   onAdd={() => addPlayer(c.id, h.id)}
-                  onUpdate={(id, patch) => updatePlayer(c.id, h.id, id, patch)}
-                  onRemove={(id) => removePlayer(c.id, h.id, id)}
+                  onUpdate={(index, patch) => updatePlayer(c.id, h.id, index, patch)}
+                  onRemove={(index) => removePlayer(c.id, h.id, index)}
                 />
               ))}
             </Fragment>

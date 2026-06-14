@@ -1,48 +1,51 @@
 import { useState } from 'react'
 import { PAGOS_BY_ID } from '../data/defaults'
 
+// Cada turno muestra siempre al menos esta cantidad de jugadores.
+export const MIN_JUGADORES = 4
+
 export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove }) {
-  const [confirmId, setConfirmId] = useState(null)
+  // Índice de la fila con la confirmación de borrado abierta.
+  const [confirmIdx, setConfirmIdx] = useState(null)
 
-  const requestRemove = (j) => {
+  // Completamos con filas "fantasma" (null) hasta el mínimo. No están
+  // persistidas: recién al escribir algo se materializan como jugadores reales.
+  const rows = jugadores.slice()
+  while (rows.length < MIN_JUGADORES) rows.push(null)
+
+  const requestRemove = (index, j) => {
     const hasData = (j.jugador || '').trim() || String(j.monto || '').trim()
-    if (hasData) setConfirmId(j.id)
-    else onRemove(j.id)
-  }
-
-  if (jugadores.length === 0) {
-    return (
-      <div className="cgrid__cell">
-        <button className="slot__empty" onClick={onAdd}>
-          Libre — anotar jugador
-        </button>
-      </div>
-    )
+    if (hasData) setConfirmIdx(index)
+    else onRemove(index)
   }
 
   return (
     <div className="cgrid__cell">
       <ul className="players">
-        {jugadores.map((j) => {
-          const medio = j.pagado ? PAGOS_BY_ID[j.pago] : null
+        {rows.map((j, index) => {
+          const ghost = j === null
+          const val = j || { jugador: '', monto: '', pagado: false }
+          const medio = val.pagado ? PAGOS_BY_ID[val.pago] : null
           return (
-            <li className={`player ${j.pagado ? 'player--pagado' : ''}`} key={j.id}>
+            // key por índice: al materializar una fila fantasma el input no se
+            // remonta y no se pierde el foco mientras se escribe.
+            <li className={`player ${val.pagado ? 'player--pagado' : ''}`} key={index}>
               <input
                 className="player__name"
                 placeholder="Nombre"
-                value={j.jugador}
-                disabled={j.pagado}
-                onChange={(e) => onUpdate(j.id, { jugador: e.target.value })}
+                value={val.jugador}
+                disabled={val.pagado}
+                onChange={(e) => onUpdate(index, { jugador: e.target.value })}
               />
               <input
                 className="player__money"
                 inputMode="numeric"
                 placeholder="$"
-                value={j.monto}
-                disabled={j.pagado}
-                onChange={(e) => onUpdate(j.id, { monto: e.target.value.replace(/[^\d]/g, '') })}
+                value={val.monto}
+                disabled={val.pagado}
+                onChange={(e) => onUpdate(index, { monto: e.target.value.replace(/[^\d]/g, '') })}
               />
-              {j.pagado ? (
+              {val.pagado ? (
                 <span
                   className="pago pago--sm pago--lock"
                   style={{ '--pago-color': medio?.color }}
@@ -50,13 +53,13 @@ export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove }) {
                 >
                   ✓ {medio?.short || 'OK'}
                 </span>
-              ) : confirmId === j.id ? (
+              ) : confirmIdx === index ? (
                 <div className="confirm-inline">
                   <button
                     className="confirm-inline__yes"
                     onClick={() => {
-                      onRemove(j.id)
-                      setConfirmId(null)
+                      onRemove(index)
+                      setConfirmIdx(null)
                     }}
                     aria-label="Confirmar"
                     title="Borrar"
@@ -65,15 +68,21 @@ export default function SlotCell({ jugadores, onAdd, onUpdate, onRemove }) {
                   </button>
                   <button
                     className="confirm-inline__no"
-                    onClick={() => setConfirmId(null)}
+                    onClick={() => setConfirmIdx(null)}
                     aria-label="Cancelar"
                     title="Cancelar"
                   >
                     ✕
                   </button>
                 </div>
+              ) : ghost ? (
+                <span className="player__del player__del--ghost" aria-hidden="true" />
               ) : (
-                <button className="player__del" onClick={() => requestRemove(j)} aria-label="Quitar">
+                <button
+                  className="player__del"
+                  onClick={() => requestRemove(index, val)}
+                  aria-label="Quitar"
+                >
                   ×
                 </button>
               )}

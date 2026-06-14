@@ -413,6 +413,11 @@ select {
   background: #fee2e2;
   color: #dc2626;
 }
+/* Espaciador para filas fantasma: mantiene alineada la columna de acción. */
+.player__del--ghost {
+  background: transparent;
+  pointer-events: none;
+}
 
 /* ---------- Confirmación inline ---------- */
 .confirm-inline {
