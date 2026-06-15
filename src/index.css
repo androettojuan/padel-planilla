@@ -1292,3 +1292,162 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+
+/* =====================================================================
+   Responsive — teléfono. El escritorio queda intacto; todo lo de abajo
+   solo aplica en pantallas chicas.
+   ===================================================================== */
+@media (max-width: 640px) {
+  .app {
+    padding: 12px 12px 48px;
+  }
+
+  /* ---- Header ---- */
+  .header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .header__brand {
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .header__logo {
+    height: 38px;
+  }
+  .header__title {
+    font-size: 16px;
+  }
+  .header__subtitle {
+    font-size: 11px;
+  }
+  .header__right {
+    gap: 10px;
+  }
+  .header__total {
+    text-align: left;
+  }
+  .header__total-value {
+    font-size: 20px;
+  }
+  .header__config {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  /* ---- Toolbar de fecha + chips ---- */
+  .toolbar {
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .toolbar__date {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .toolbar__date-center {
+    min-width: 0;
+    flex: 1 1 120px;
+  }
+  .toolbar__date-input {
+    width: 100%;
+  }
+  .toolbar__date-label {
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+  }
+  /* Hoy / Mes / Fiados se estiran a toda la fila (las flechas no). */
+  .toolbar__date .btn:not(.btn--ghost) {
+    flex: 1 1 0;
+    min-width: 88px;
+    text-align: center;
+  }
+  .toolbar__chips {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .chip {
+    justify-content: space-between;
+    padding: 7px 10px;
+  }
+
+  /* ---- Canchas apiladas (layout móvil de CourtsBoard) ---- */
+  .cmob {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .cmob__chead {
+    font-size: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .cmob__row {
+    margin-top: 10px;
+  }
+  .cmob__time {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0 2px 4px;
+  }
+  /* Con la cancha a todo el ancho el nombre tiene buen espacio. */
+  .player {
+    grid-template-columns: 1fr 92px auto;
+  }
+
+  /* ---- Paneles laterales (consumos / cuentas / mostrador) ---- */
+  .consumos__list,
+  .cuentas__list {
+    max-height: none;
+  }
+
+  /* ---- Modales ---- */
+  .modal-overlay {
+    padding: 12px 8px;
+    align-items: stretch;
+  }
+  .modal {
+    max-height: calc(100vh - 24px);
+  }
+  .modal__header,
+  .modal__footer {
+    padding: 12px 14px;
+  }
+  .modal__body {
+    padding: 8px 14px 14px;
+  }
+
+  /* Tabla del resumen: scroll horizontal si no entra. */
+  .resumen__tabla {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .resumen__cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Config: horarios y precios siguen en una fila pero más compactos. */
+  .cfg-input--time {
+    flex-basis: 64px;
+  }
+  .cfg-input--price {
+    flex-basis: 80px;
+  }
+}
+
+/* Pantallas muy chicas: una sola columna de chips/cards. */
+@media (max-width: 330px) {
+  .toolbar__chips {
+    grid-template-columns: 1fr;
+  }
+}
