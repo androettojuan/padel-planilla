@@ -14,7 +14,7 @@ export default function CuentasPanel({ config, planilla, update }) {
     update((prev) => aplicarPago(prev, nombre, medio, true))
     setCobrando(null)
   }
-  const revertir = (nombre) => update((prev) => aplicarPago(prev, nombre, null, false))
+  const revertir = (nombre, medio) => update((prev) => aplicarPago(prev, nombre, medio, false))
 
   const pendientes = cuentas.filter((c) => !c.pagado)
   const pagadas = cuentas.filter((c) => c.pagado)
@@ -105,7 +105,7 @@ export default function CuentasPanel({ config, planilla, update }) {
                   const label = c.nombre || SIN_ASIGNAR_LABEL
                   const medio = c.medio ? PAGOS_BY_ID[c.medio] : null
                   return (
-                    <li className="cuenta cuenta--pagada" key={label}>
+                    <li className="cuenta cuenta--pagada" key={`${label}__${c.medio}`}>
                       <div className="cuenta__head">
                         <span className="cuenta__name">{label}</span>
                         <span className="cuenta__total">{formatMoney(c.total)}</span>
@@ -114,7 +114,7 @@ export default function CuentasPanel({ config, planilla, update }) {
                         <span className="pago pago--sm" style={{ '--pago-color': medio?.color }}>
                           ✓ {medio?.label || 'Pagado'}
                         </span>
-                        <button className="btn btn--ghost-sm" onClick={() => revertir(c.nombre)}>
+                        <button className="btn btn--ghost-sm" onClick={() => revertir(c.nombre, c.medio)}>
                           Revertir
                         </button>
                       </div>

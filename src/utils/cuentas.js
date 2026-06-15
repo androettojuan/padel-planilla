@@ -6,13 +6,18 @@ export const SIN_ASIGNAR_LABEL = 'Sin asignar'
 
 const nombreDe = (item) => (item?.jugador || '').trim()
 
+const sumTurnos = (arr) => arr.reduce((s, t) => s + (Number(t.monto) || 0), 0)
+const sumConsumos = (arr) =>
+  arr.reduce((s, c) => s + (Number(c.precio) || 0) * (Number(c.cantidad) || 0), 0)
+
 /**
- * Agrupa la planilla en "cuentas" por jugador: cada cuenta junta las líneas de
- * turno y los consumos de ese jugador, con sus totales y estado de pago.
+ * Agrupa la planilla en "cuentas" por jugador. Cada pago es independiente: las
+ * líneas sin cobrar forman una cuenta pendiente, y las ya cobradas se agrupan
+ * por medio de pago (un turno pagado con Mercado Pago y un consumo posterior
+ * pagado en efectivo son dos cuentas pagadas distintas).
  *
- * Una cuenta está pagada cuando tiene al menos una línea y todas están pagadas;
- * el medio se toma de la primera línea cobrada. Si se agrega un consumo nuevo a
- * un jugador ya cobrado, la cuenta vuelve a quedar pendiente por el saldo nuevo.
+ * Así, agregar un consumo nuevo a un jugador ya cobrado genera una cuenta
+ * pendiente nueva por ese consumo, sin tocar lo ya pagado.
  */
 export function buildCuentas(planilla, config) {
   const canchas = config?.canchas || []
@@ -44,19 +49,47 @@ export function buildCuentas(planilla, config) {
 
   const cuentas = []
   for (const g of groups.values()) {
-    const totalTurnos = g.turnos.reduce((s, t) => s + (Number(t.monto) || 0), 0)
-    const totalConsumos = g.consumos.reduce(
-      (s, c) => s + (Number(c.precio) || 0) * (Number(c.cantidad) || 0),
-      0,
-    )
-    const total = totalTurnos + totalConsumos
-    if (total <= 0 && g.consumos.length === 0) continue // nada para cobrar todavía
+    // Cuenta pendiente: lo que todavía no se cobró del jugador.
+    const turnosPend = g.turnos.filter((t) => !t.pagado)
+    const consumosPend = g.consumos.filter((c) => !c.pagado)
+    const totalTurnos = sumTurnos(turnosPend)
+    const totalConsumos = sumConsumos(consumosPend)
+    if (totalTurnos + totalConsumos > 0 || consumosPend.length > 0) {
+      cuentas.push({
+        nombre: g.nombre,
+        turnos: turnosPend,
+        consumos: consumosPend,
+        totalTurnos,
+        totalConsumos,
+        total: totalTurnos + totalConsumos,
+        pagado: false,
+        medio: null,
+      })
+    }
 
-    const items = [...g.turnos, ...g.consumos]
-    const pagado = items.length > 0 && items.every((i) => i.pagado)
-    const medio = pagado ? items.find((i) => i.pagado)?.pago : null
-
-    cuentas.push({ ...g, totalTurnos, totalConsumos, total, pagado, medio })
+    // Cuentas pagadas: una por medio de pago, para no mezclar cobros distintos.
+    const porMedio = new Map()
+    const acumular = (item, tipo) => {
+      if (!item.pagado) return
+      if (!porMedio.has(item.pago)) porMedio.set(item.pago, { turnos: [], consumos: [] })
+      porMedio.get(item.pago)[tipo].push(item)
+    }
+    g.turnos.forEach((t) => acumular(t, 'turnos'))
+    g.consumos.forEach((c) => acumular(c, 'consumos'))
+    for (const [medio, grp] of porMedio) {
+      const tt = sumTurnos(grp.turnos)
+      const tc = sumConsumos(grp.consumos)
+      cuentas.push({
+        nombre: g.nombre,
+        turnos: grp.turnos,
+        consumos: grp.consumos,
+        totalTurnos: tt,
+        totalConsumos: tc,
+        total: tt + tc,
+        pagado: true,
+        medio,
+      })
+    }
   }
 
   // Pendientes primero; dentro de cada grupo, por nombre.
@@ -66,17 +99,27 @@ export function buildCuentas(planilla, config) {
   })
 }
 
-// Marca o revierte el pago de todas las líneas (turnos + consumos) del jugador.
+// Cobra o revierte el pago del jugador, sin tocar otros cobros suyos.
+// Al cobrar (pagado=true) marca solo las líneas todavía pendientes con `medio`.
+// Al revertir (pagado=false) afecta solo las líneas cobradas con ese `medio`.
 export function aplicarPago(planilla, nombre, medio, pagado) {
   const objetivo = (nombre || '').trim()
   const pertenece = (item) => (item?.jugador || '').trim() === objetivo
-  const patch = pagado ? { pagado: true, pago: medio } : { pagado: false }
+  const afecta = pagado
+    ? (item) => pertenece(item) && !item.pagado
+    : (item) => pertenece(item) && item.pagado && item.pago === medio
+  const aplicar = (item) =>
+    afecta(item)
+      ? pagado
+        ? { ...item, pagado: true, pago: medio }
+        : { ...item, pagado: false, pago: null }
+      : item
 
   const turnos = {}
   for (const [key, lista] of Object.entries(planilla.turnos || {})) {
-    turnos[key] = lista.map((t) => (pertenece(t) ? { ...t, ...patch } : t))
+    turnos[key] = lista.map(aplicar)
   }
-  const consumos = (planilla.consumos || []).map((c) => (pertenece(c) ? { ...c, ...patch } : c))
+  const consumos = (planilla.consumos || []).map(aplicar)
 
   return { ...planilla, turnos, consumos }
 }
