@@ -9,6 +9,7 @@ import {
   deleteFiadoCargo,
 } from '../firebase/fiado'
 import { buildSaldos } from '../utils/saldos'
+import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
 import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
 import NombreInput from './NombreInput'
@@ -165,10 +166,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
               {s.cargos.map((c, i) => (
                 <div className="saldo__mov" key={`c-${i}`}>
                   <span className="saldo__mov-fecha">{formatDateNumeric(c.dateKey)}</span>
-                  <span className="saldo__mov-concepto">
-                    {c.concepto}
-                    {c.manual && <span className="saldo__tag"> a mano</span>}
-                  </span>
+                  <span className="saldo__mov-concepto">{c.concepto}</span>
                   <span className="saldo__mov-monto">{formatMoney(c.monto)}</span>
                   {c.manual && c.id ? (
                     confirmCargo === c.id ? (
@@ -251,9 +249,18 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
               </div>
             ) : (
               s.saldo > 0 && (
-                <button className="btn btn--primary saldo__pagar" onClick={() => abrirCobro(s)}>
-                  Registrar pago
-                </button>
+                <div className="saldo__acciones">
+                  <button className="btn btn--primary saldo__pagar" onClick={() => abrirCobro(s)}>
+                    Registrar pago
+                  </button>
+                  <button
+                    className="btn btn--ghost-sm"
+                    onClick={() => descargarBoleta(s)}
+                    title="Descargar imagen para enviar por WhatsApp"
+                  >
+                    📄 Boleta
+                  </button>
+                </div>
               )
             )}
           </div>

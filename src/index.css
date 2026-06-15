@@ -1258,6 +1258,16 @@ select {
 .saldo__pagar {
   margin-top: 4px;
 }
+.saldo__acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.saldo__acciones .saldo__pagar {
+  flex: 1;
+  margin-top: 0;
+}
 .saldos__add {
   width: 100%;
   margin-bottom: 14px;
@@ -1281,9 +1291,4 @@ select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-}
-.saldo__tag {
-  color: var(--text-soft);
-  font-size: 11px;
-  font-style: italic;
 }
