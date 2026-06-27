@@ -38,10 +38,16 @@ export function cargosFiado(planillas) {
  * suman igual que lo anotado en planillas, pero quedan marcadas (manual + id)
  * para poder borrarlas.
  *
+ * `cortes` son liquidaciones: cuando una cuenta se saldó por completo se borran
+ * sus pagos y cargos manuales, pero los anotados en planillas no se pueden
+ * borrar. El corte guarda `montoPlanilla` (lo anotado ya archivado) y acá se
+ * descuenta de los cargos de planilla del más viejo al más nuevo, así esos
+ * cargos viejos dejan de sumar al saldo y la cuenta arranca de 0.
+ *
  * Devuelve { saldos, totalDeuda }, ordenado alfabéticamente. Cada saldo:
  * { nombreKey, nombre, cargos, pagos, totalCargos, totalPagos, saldo }.
  */
-export function buildSaldos(planillas, fiadoPagos = [], jugadores = [], cargosManuales = []) {
+export function buildSaldos(planillas, fiadoPagos = [], jugadores = [], cargosManuales = [], cortes = []) {
   const map = new Map()
   const get = (key, nombre) => {
     if (!map.has(key)) {
@@ -85,10 +91,38 @@ export function buildSaldos(planillas, fiadoPagos = [], jugadores = [], cargosMa
     if (k) dirByKey.set(k, (j.nombre || '').trim())
   }
 
+  // Monto anotado ya archivado por persona (liquidaciones).
+  const corteByKey = new Map()
+  for (const ct of cortes) {
+    const key = ct.nombreKey || normalizeNombre(ct.nombre)
+    if (key) corteByKey.set(key, Number(ct.montoPlanilla) || 0)
+  }
+
   const saldos = []
   for (const g of map.values()) {
     g.cargos.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
     g.pagos.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
+
+    // Descontamos el corte de los cargos de planilla (no manuales), del más
+    // viejo al más nuevo: los totalmente archivados se quitan y el del borde
+    // queda con lo que reste.
+    let corte = corteByKey.get(g.nombreKey) || 0
+    if (corte > 0) {
+      const cargos = []
+      for (const c of g.cargos) {
+        if (c.manual || corte <= 0) {
+          cargos.push(c)
+        } else if (corte >= c.monto) {
+          corte -= c.monto // cargo archivado: no se muestra
+        } else {
+          cargos.push({ ...c, monto: c.monto - corte })
+          corte = 0
+        }
+      }
+      g.cargos = cargos
+      g.totalCargos = cargos.reduce((s, c) => s + c.monto, 0)
+    }
+
     saldos.push({
       ...g,
       nombre: dirByKey.get(g.nombreKey) || g.nombre,

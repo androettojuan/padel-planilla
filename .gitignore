@@ -12,3 +12,7 @@ dist-ssr
 
 # Playwright / capturas de prueba
 .playwright-mcp/
+
+# Firebase / PWA dev
+.firebase/
+dev-dist/

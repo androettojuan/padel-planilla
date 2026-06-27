@@ -2,13 +2,19 @@ import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from './config'
 
 // ---------------------------------------------------------------------------
-// Fiados. Dos colecciones:
+// Fiados. Tres colecciones:
 //   fiadoPagos/{id}   { id, nombre, nombreKey, monto, medio, fecha, creado }
 //     Un pago (parcial o total) que una persona hace para saldar lo que debía.
 //   fiadoCargos/{id}  { id, nombre, nombreKey, concepto, monto, fecha, creado }
 //     Una deuda cargada a mano (para pasar al sistema lo anotado en papel), sin
 //     pasar por una planilla del día.
-// El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos.
+//   fiadoCortes/{nombreKey}  { nombreKey, nombre, montoPlanilla, fecha, ts }
+//     Al saldar una cuenta por completo se borran sus pagos y cargos manuales,
+//     pero los anotados en planillas no se pueden borrar (son ventas del día).
+//     El corte guarda cuánto de lo anotado quedó archivado, para que esos cargos
+//     viejos dejen de sumar al saldo. Uno por persona; se sobrescribe.
+// El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos,
+// descontando lo archivado por el corte.
 // ---------------------------------------------------------------------------
 const read = (key) => {
   try {
@@ -52,3 +58,6 @@ export const deleteFiadoPago = (id) => remove('fiadoPagos', id)
 export const loadFiadoCargos = () => load('fiadoCargos')
 export const saveFiadoCargo = (cargo) => save('fiadoCargos', cargo)
 export const deleteFiadoCargo = (id) => remove('fiadoCargos', id)
+
+export const loadFiadoCortes = () => load('fiadoCortes')
+export const saveFiadoCorte = (corte) => save('fiadoCortes', corte)
