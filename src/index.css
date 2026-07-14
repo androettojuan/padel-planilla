@@ -1249,6 +1249,19 @@ select {
 .saldo__mov--pago .saldo__mov-monto {
   color: var(--primary-dark);
 }
+.saldo__detalle-vacio {
+  margin: 0;
+  font-size: 13px;
+}
+.saldo__pagos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.saldo__pagos .saldo__mov {
+  padding: 0 8px;
+}
 .saldo__cobro {
   display: flex;
   flex-direction: column;

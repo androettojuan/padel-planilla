@@ -30,6 +30,32 @@ export function cargosFiado(planillas) {
 }
 
 /**
+ * Aplica los pagos contra los cargos más viejos (FIFO) y devuelve solo los
+ * cargos que siguen impagos. Un cargo totalmente saldado desaparece; el cargo
+ * del borde queda con el monto que resta pagar. No muta la entrada.
+ *
+ * No representa los pagos como líneas negativas: los pagos viven en su propia
+ * entidad (`fiadoPagos`) y acá solo se usan para computar cuánto sigue debiendo
+ * cada cargo. Revertir un pago recalcula todo automáticamente.
+ */
+export function aplicarPagosFIFO(cargos = [], pagos = []) {
+  const orden = cargos.slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''))
+  let pool = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0)
+  const out = []
+  for (const c of orden) {
+    const monto = Number(c.monto) || 0
+    if (pool >= monto) {
+      pool -= monto // cargo totalmente saldado: no se muestra
+      continue
+    }
+    // Si `pool > 0`, este cargo recibió un pago parcial: queda solo el resto.
+    out.push({ ...c, monto: monto - pool, parcial: pool > 0 })
+    pool = 0
+  }
+  return out
+}
+
+/**
  * Calcula el saldo de fiado por persona: lo anotado (cargos) menos los pagos de
  * fiado registrados. Agrupa por nombre normalizado (ignora mayúsculas, acentos
  * y comas) y, si el nombre coincide con uno del directorio, lo usa para mostrar.

@@ -10,7 +10,7 @@ import {
   loadFiadoCortes,
   saveFiadoCorte,
 } from '../firebase/fiado'
-import { buildSaldos } from '../utils/saldos'
+import { buildSaldos, aplicarPagosFIFO } from '../utils/saldos'
 import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
 import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
@@ -32,6 +32,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   const [cobrando, setCobrando] = useState(null) // nombreKey registrando pago
   const [monto, setMonto] = useState('')
   const [verSaldados, setVerSaldados] = useState(false)
+  const [verPagos, setVerPagos] = useState(null) // nombreKey con pagos desplegados
   const [confirmCargo, setConfirmCargo] = useState(null) // id del cargo a borrar
   const [confirmSaldar, setConfirmSaldar] = useState(null) // nombreKey a archivar
 
@@ -199,6 +200,10 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   const renderItem = (s) => {
     const abierto = expandido === s.nombreKey
     const favor = s.saldo < 0
+    // Cargos que siguen impagos (pagos aplicados FIFO a los más viejos). Los
+    // pagos no se listan como líneas negativas: van en su propio desplegable.
+    const pendientes = aplicarPagosFIFO(s.cargos, s.pagos)
+    const pagosAbiertos = verPagos === s.nombreKey
     return (
       <li className="saldo-item" key={s.nombreKey}>
         <button
@@ -215,10 +220,12 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
         {abierto && (
           <div className="saldo-item__body">
             <div className="saldo__detalle">
-              {s.cargos.map((c, i) => (
+              {pendientes.map((c, i) => (
                 <div className="saldo__mov" key={`c-${i}`}>
                   <span className="saldo__mov-fecha">{formatDateNumeric(c.dateKey)}</span>
-                  <span className="saldo__mov-concepto">{c.concepto}</span>
+                  <span className="saldo__mov-concepto">
+                    {c.parcial ? `Resto ${c.concepto}` : c.concepto}
+                  </span>
                   <span className="saldo__mov-monto">{formatMoney(c.monto)}</span>
                   {c.manual && c.id ? (
                     confirmCargo === c.id ? (
@@ -257,21 +264,38 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                   )}
                 </div>
               ))}
-              {s.pagos.map((p) => (
-                <div className="saldo__mov saldo__mov--pago" key={`p-${p.id}`}>
-                  <span className="saldo__mov-fecha">{formatDateNumeric(p.fecha)}</span>
-                  <span className="saldo__mov-concepto">Pago · {medioLabel(p.medio)}</span>
-                  <span className="saldo__mov-monto">−{formatMoney(p.monto)}</span>
-                  <button
-                    className="player__del"
-                    onClick={() => revertirPago(p.id)}
-                    aria-label="Revertir pago"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              {pendientes.length === 0 && (
+                <p className="muted saldo__detalle-vacio">Sin deuda pendiente.</p>
+              )}
             </div>
+
+            {s.pagos.length > 0 && (
+              <div className="saldo__pagos">
+                <button
+                  className="cuentas__toggle"
+                  onClick={() => setVerPagos(pagosAbiertos ? null : s.nombreKey)}
+                >
+                  <span>
+                    {pagosAbiertos ? '▾' : '▸'} Ver pagos ({s.pagos.length})
+                  </span>
+                </button>
+                {pagosAbiertos &&
+                  s.pagos.map((p) => (
+                    <div className="saldo__mov saldo__mov--pago" key={`p-${p.id}`}>
+                      <span className="saldo__mov-fecha">{formatDateNumeric(p.fecha)}</span>
+                      <span className="saldo__mov-concepto">Pago · {medioLabel(p.medio)}</span>
+                      <span className="saldo__mov-monto">−{formatMoney(p.monto)}</span>
+                      <button
+                        className="player__del"
+                        onClick={() => revertirPago(p.id)}
+                        aria-label="Revertir pago"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
 
             {cobrando === s.nombreKey ? (
               <div className="saldo__cobro">

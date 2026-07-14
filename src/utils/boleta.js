@@ -1,4 +1,5 @@
 import { formatMoney, formatDateNumeric, todayKey } from './helpers'
+import { aplicarPagosFIFO } from './saldos'
 
 // Genera la boleta de fiado de una persona como imagen PNG para enviar por
 // WhatsApp. Se dibuja todo a mano sobre un <canvas> (sin dependencias) con el
@@ -18,26 +19,6 @@ const COLORS = {
 
 const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
 
-// Aplica los pagos contra los cargos más viejos (FIFO) y devuelve solo los
-// cargos que siguen impagos. Lo ya saldado desaparece de la boleta (sin líneas
-// en negativo); si se pagó todo, la lista queda vacía. El último cargo parcial
-// se muestra con el monto que resta pagar.
-function cargosPendientes(saldo) {
-  const cargos = (saldo.cargos || []).slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''))
-  let pool = (saldo.pagos || []).reduce((s, p) => s + (Number(p.monto) || 0), 0)
-  const out = []
-  for (const c of cargos) {
-    const monto = Number(c.monto) || 0
-    if (pool >= monto) {
-      pool -= monto // cargo totalmente saldado: no se muestra
-      continue
-    }
-    out.push({ ...c, monto: monto - pool }) // resto impago del cargo
-    pool = 0
-  }
-  return out
-}
-
 // Recorta un texto agregando "…" para que entre en `maxWidth` px.
 function truncar(ctx, texto, maxWidth) {
   if (ctx.measureText(texto).width <= maxWidth) return texto
@@ -50,7 +31,7 @@ function truncar(ctx, texto, maxWidth) {
 
 // Dibuja la boleta y devuelve el <canvas> listo para exportar.
 export function boletaCanvas(saldo) {
-  const cargos = cargosPendientes(saldo)
+  const cargos = aplicarPagosFIFO(saldo.cargos, saldo.pagos)
   const movs = cargos.length
 
   const dpr = 2
@@ -145,7 +126,8 @@ export function boletaCanvas(saldo) {
   }
 
   for (const c of cargos) {
-    filaTexto(formatDateNumeric(c.dateKey), c.concepto, formatMoney(c.monto), COLORS.ink)
+    const concepto = c.parcial ? `Resto ${c.concepto}` : c.concepto
+    filaTexto(formatDateNumeric(c.dateKey), concepto, formatMoney(c.monto), COLORS.ink)
   }
 
   // Línea y total
