@@ -3,13 +3,22 @@
 //
 // Solo las líneas confirmadas (pagado) tienen medio de pago; lo no cobrado se
 // acumula como "pendiente". `total` es lo facturado en el mes.
+//
+// Además recibe los pagos de fiado del mes (`fiadoPagos`, filtrados por fecha de
+// pago): cada pago es plata que entró este mes por su medio (contado/mercado),
+// así que se SUMA a ese medio y se RESTA de anotado (deja de estar fiado). Como
+// un pago puede saldar deuda anotada en meses anteriores, el anotado del mes
+// puede quedar negativo (se cobró más fiado viejo del que se anotó nuevo); por
+// eso se devuelve `fiadoCobrado` para poder explicarlo en la UI.
 
 const PAGO_IDS = ['contado', 'mercado', 'anotado']
 
-export function resumenMensual(planillas) {
+export function resumenMensual(planillas, fiadoPagos = []) {
   const acc = { contado: 0, mercado: 0, anotado: 0, pendiente: 0, total: 0 }
   const porDiaMap = new Map()
   const anotadoDetalle = []
+  const fiadoCobrado = { contado: 0, mercado: 0, total: 0 }
+  const fiadoCobradoDetalle = []
 
   const dia = (dateKey) => {
     if (!porDiaMap.has(dateKey)) {
@@ -53,10 +62,41 @@ export function resumenMensual(planillas) {
     }
   }
 
+  // Pagos de fiado cobrados este mes: mueven plata de anotado al medio real.
+  for (const p of fiadoPagos) {
+    const monto = Number(p.monto) || 0
+    if (!(monto > 0)) continue
+    const medio = p.medio === 'contado' || p.medio === 'mercado' ? p.medio : null
+    if (!medio) continue // un fiado no se salda con "anotado"
+    const dateKey = p.fecha || ''
+    acc[medio] += monto
+    acc.anotado -= monto
+    if (dateKey) {
+      const d = dia(dateKey)
+      d[medio] += monto
+      d.anotado -= monto
+      // No tocamos d.total ni acc.total: un pago no es facturación nueva, solo
+      // reclasifica plata ya facturada de anotado al medio con que se cobró.
+    }
+    fiadoCobrado[medio] += monto
+    fiadoCobrado.total += monto
+    fiadoCobradoDetalle.push({ dateKey, nombre: (p.nombre || '').trim() || 'Sin nombre', medio, monto })
+  }
+
   const porDia = [...porDiaMap.values()].sort((a, b) => a.dateKey.localeCompare(b.dateKey))
   anotadoDetalle.sort(
     (a, b) => a.dateKey.localeCompare(b.dateKey) || a.nombre.localeCompare(b.nombre),
   )
+  fiadoCobradoDetalle.sort(
+    (a, b) => a.dateKey.localeCompare(b.dateKey) || a.nombre.localeCompare(b.nombre),
+  )
 
-  return { ...acc, cobrado: acc.contado + acc.mercado + acc.anotado, porDia, anotadoDetalle }
+  return {
+    ...acc,
+    cobrado: acc.contado + acc.mercado + acc.anotado,
+    porDia,
+    anotadoDetalle,
+    fiadoCobrado,
+    fiadoCobradoDetalle,
+  }
 }

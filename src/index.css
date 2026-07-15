@@ -899,6 +899,16 @@ select {
   font-weight: 800;
   color: var(--pago-color);
 }
+.resumen__nota {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-soft);
+  background: color-mix(in srgb, #16a34a 8%, transparent);
+  border: 1px solid color-mix(in srgb, #16a34a 25%, transparent);
+  border-radius: var(--radius-sm);
+}
 .resumen__tabla {
   width: 100%;
   border-collapse: collapse;

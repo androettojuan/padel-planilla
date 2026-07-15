@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadMonth } from '../firebase/planillas'
+import { loadFiadoPagos } from '../firebase/fiado'
 import { resumenMensual } from '../utils/resumen'
 import { PAGOS } from '../data/defaults'
 import { formatMoney, formatMonth, formatDayShort, shiftMonth } from '../utils/helpers'
 
+const medioLabel = (id) => PAGOS.find((p) => p.id === id)?.label || id
+
 export default function ResumenMensualModal({ monthKey, onClose }) {
   const [mes, setMes] = useState(monthKey)
   const [planillas, setPlanillas] = useState(null) // null = cargando
+  const [fiadoPagos, setFiadoPagos] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -21,7 +25,22 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
     }
   }, [mes])
 
-  const r = useMemo(() => resumenMensual(planillas || []), [planillas])
+  // Los pagos de fiado se cargan una vez (todos) y se filtran por mes de pago.
+  useEffect(() => {
+    let active = true
+    loadFiadoPagos()
+      .then((p) => active && setFiadoPagos(p))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const pagosMes = useMemo(
+    () => fiadoPagos.filter((p) => (p.fecha || '').slice(0, 7) === mes),
+    [fiadoPagos, mes],
+  )
+  const r = useMemo(() => resumenMensual(planillas || [], pagosMes), [planillas, pagosMes])
   const sinDatos = planillas && r.total === 0
 
   return (
@@ -73,6 +92,18 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
                 )}
               </div>
 
+              {r.fiadoCobrado.total > 0 && (
+                <p className="resumen__nota">
+                  💵 Este mes entraron <strong>{formatMoney(r.fiadoCobrado.total)}</strong> en pagos
+                  de fiados
+                  {r.fiadoCobrado.contado > 0 && ` · Contado ${formatMoney(r.fiadoCobrado.contado)}`}
+                  {r.fiadoCobrado.mercado > 0 && ` · Mercado ${formatMoney(r.fiadoCobrado.mercado)}`}
+                  . Ya están sumados en Contado/Mercado y restados de Anotado.
+                  {r.anotado < 0 &&
+                    ' El Anotado quedó en negativo porque este mes se cobró más fiado viejo del que se anotó nuevo.'}
+                </p>
+              )}
+
               {/* Desglose por día */}
               <section className="cfg-section">
                 <h3 className="cfg-section__title">Por día</h3>
@@ -121,6 +152,28 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
                   </ul>
                 )}
               </section>
+
+              {/* Cobros de fiado del mes (plata que entró por pagos de fiados) */}
+              {r.fiadoCobradoDetalle.length > 0 && (
+                <section className="cfg-section">
+                  <div className="cfg-section__head">
+                    <h3 className="cfg-section__title">Cobros de fiado</h3>
+                    <span className="resumen__anotado-total">
+                      {formatMoney(r.fiadoCobrado.total)}
+                    </span>
+                  </div>
+                  <ul className="resumen__anotado">
+                    {r.fiadoCobradoDetalle.map((a, i) => (
+                      <li className="resumen__anotado-row" key={`${a.dateKey}-${i}`}>
+                        <span className="resumen__anotado-fecha">{formatDayShort(a.dateKey)}</span>
+                        <span className="resumen__anotado-nombre">{a.nombre}</span>
+                        <span className="resumen__anotado-concepto">{medioLabel(a.medio)}</span>
+                        <span className="resumen__anotado-monto">{formatMoney(a.monto)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </>
           )}
         </div>
