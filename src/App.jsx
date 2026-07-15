@@ -11,7 +11,6 @@ import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
 import ConsumosPanel from './components/ConsumosPanel'
 import CuentasPanel from './components/CuentasPanel'
-import MostradorPanel from './components/MostradorPanel'
 import ConfigModal from './components/ConfigModal'
 import ResumenMensualModal from './components/ResumenMensualModal'
 import SaldosModal from './components/SaldosModal'
@@ -93,13 +92,6 @@ export default function App() {
         <aside className="layout__consumos">
           <CuentasPanel config={config} planilla={planilla} update={update} />
           <ConsumosPanel
-            config={config}
-            planilla={planilla}
-            update={update}
-            sugerencias={sugerencias}
-            onCommitNombre={upsertNombre}
-          />
-          <MostradorPanel
             config={config}
             planilla={planilla}
             update={update}
