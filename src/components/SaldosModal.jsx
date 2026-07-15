@@ -68,12 +68,16 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   const matchNombre = (nombre) => !q || normalizeNombre(nombre).includes(q)
 
   const deudores = saldos.filter((s) => s.saldo > 0 && matchNombre(s.nombre))
-  // En "Saldados" no mostramos las cuentas ya archivadas (saldo 0 sin historial).
+  // Cuentas con plata a favor (pagaron de más): se muestran aparte y visibles,
+  // no escondidas en "Saldados".
+  const aFavor = saldos.filter((s) => s.saldo < 0 && matchNombre(s.nombre))
+  // En "Saldados" solo quedan las cuentas en 0 con historial (no las archivadas,
+  // que quedan en 0 sin cargos ni pagos).
   const saldados = saldos.filter(
     (s) =>
-      s.saldo <= 0 &&
+      s.saldo === 0 &&
       matchNombre(s.nombre) &&
-      (s.saldo < 0 || s.cargos.length > 0 || s.pagos.length > 0),
+      (s.cargos.length > 0 || s.pagos.length > 0),
   )
 
   const abrirCobro = (s) => {
@@ -462,6 +466,13 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                   <ul className="saldo-list">{deudores.map(renderItem)}</ul>
                 )}
               </section>
+
+              {aFavor.length > 0 && (
+                <section className="cfg-section">
+                  <h3 className="cfg-section__title">A favor ({aFavor.length})</h3>
+                  <ul className="saldo-list">{aFavor.map(renderItem)}</ul>
+                </section>
+              )}
 
               {saldados.length > 0 && (
                 <div className="cuentas__pagadas">

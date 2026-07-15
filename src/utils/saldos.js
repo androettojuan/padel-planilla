@@ -117,11 +117,12 @@ export function buildSaldos(planillas, fiadoPagos = [], jugadores = [], cargosMa
     if (k) dirByKey.set(k, (j.nombre || '').trim())
   }
 
-  // Monto anotado ya archivado por persona (liquidaciones).
+  // Monto anotado ya archivado por persona (liquidaciones), con la fecha del
+  // corte para no descontar cargos posteriores a la liquidación.
   const corteByKey = new Map()
   for (const ct of cortes) {
     const key = ct.nombreKey || normalizeNombre(ct.nombre)
-    if (key) corteByKey.set(key, Number(ct.montoPlanilla) || 0)
+    if (key) corteByKey.set(key, { monto: Number(ct.montoPlanilla) || 0, fecha: ct.fecha || '' })
   }
 
   const saldos = []
@@ -131,12 +132,17 @@ export function buildSaldos(planillas, fiadoPagos = [], jugadores = [], cargosMa
 
     // Descontamos el corte de los cargos de planilla (no manuales), del más
     // viejo al más nuevo: los totalmente archivados se quitan y el del borde
-    // queda con lo que reste.
-    let corte = corteByKey.get(g.nombreKey) || 0
+    // queda con lo que reste. Solo neteamos cargos hasta la fecha del corte:
+    // los posteriores son deuda nueva y el corte no debe tocarlos (si no, un
+    // corte viejo "se comería" los cargos que anotás después).
+    const ct = corteByKey.get(g.nombreKey)
+    let corte = ct?.monto || 0
+    const corteFecha = ct?.fecha || ''
     if (corte > 0) {
       const cargos = []
       for (const c of g.cargos) {
-        if (c.manual || corte <= 0) {
+        const posterior = corteFecha && (c.dateKey || '') > corteFecha
+        if (c.manual || corte <= 0 || posterior) {
           cargos.push(c)
         } else if (corte >= c.monto) {
           corte -= c.monto // cargo archivado: no se muestra
