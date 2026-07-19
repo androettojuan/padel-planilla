@@ -64,9 +64,10 @@ export function aplicarPagosFIFO(cargos = [], pagos = []) {
  * suman igual que lo anotado en planillas, pero quedan marcadas (manual + id)
  * para poder borrarlas.
  *
- * `cortes` son liquidaciones: cuando una cuenta se saldó por completo se borran
- * sus pagos y cargos manuales, pero los anotados en planillas no se pueden
- * borrar. El corte guarda `montoPlanilla` (lo anotado ya archivado) y acá se
+ * `cortes` son liquidaciones históricas (ya no se crean; ver firebase/fiado.js):
+ * al saldar una cuenta se borraban sus pagos y cargos manuales, pero los
+ * anotados en planillas no se pueden borrar. El corte guarda `montoPlanilla`
+ * (lo anotado que quedó archivado) y acá se
  * descuenta de los cargos de planilla del más viejo al más nuevo, así esos
  * cargos viejos dejan de sumar al saldo y la cuenta arranca de 0.
  *

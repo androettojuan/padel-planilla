@@ -9,10 +9,17 @@ import { db, isFirebaseConfigured } from './config'
 //     Una deuda cargada a mano (para pasar al sistema lo anotado en papel), sin
 //     pasar por una planilla del día.
 //   fiadoCortes/{nombreKey}  { nombreKey, nombre, montoPlanilla, fecha, ts }
-//     Al saldar una cuenta por completo se borran sus pagos y cargos manuales,
-//     pero los anotados en planillas no se pueden borrar (son ventas del día).
-//     El corte guarda cuánto de lo anotado quedó archivado, para que esos cargos
-//     viejos dejen de sumar al saldo. Uno por persona; se sobrescribe.
+//     HISTÓRICO: ya no se crean. Venían de "saldar y archivar", que borraba los
+//     pagos de la persona; como el resumen mensual suma cada pago a su medio
+//     (contado/mercado), archivar hacía desaparecer esa plata de los totales del
+//     mes. Se quitó esa acción, pero los cortes existentes se siguen leyendo
+//     para que las cuentas archivadas antes no vuelvan a mostrar deuda vieja.
+//   fiadoArchivados/{nombreKey}  { nombreKey, nombre, fecha, ts }
+//     Marca de "limpiar de la vista", sin borrar NADA: los pagos y cargos siguen
+//     enteros y los totales por medio del resumen mensual no cambian. Solo mueve
+//     la cuenta a la sección "Archivados" del modal. Si después aparece un
+//     movimiento nuevo (o el saldo deja de ser 0), la cuenta vuelve sola a la
+//     lista principal para que una deuda nueva nunca quede escondida.
 // El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos,
 // descontando lo archivado por el corte.
 // ---------------------------------------------------------------------------
@@ -59,5 +66,9 @@ export const loadFiadoCargos = () => load('fiadoCargos')
 export const saveFiadoCargo = (cargo) => save('fiadoCargos', cargo)
 export const deleteFiadoCargo = (id) => remove('fiadoCargos', id)
 
+// Solo lectura: los cortes existentes se respetan, pero no se crean nuevos.
 export const loadFiadoCortes = () => load('fiadoCortes')
-export const saveFiadoCorte = (corte) => save('fiadoCortes', corte)
+
+export const loadFiadoArchivados = () => load('fiadoArchivados')
+export const saveFiadoArchivado = (a) => save('fiadoArchivados', a)
+export const deleteFiadoArchivado = (nombreKey) => remove('fiadoArchivados', nombreKey)
