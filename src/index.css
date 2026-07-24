@@ -461,6 +461,35 @@ select {
 .courts__scroll {
   overflow-x: auto;
 }
+/* Fila de encabezados: queda pegada arriba y lleva la barra de desplazamiento,
+   así no hay que bajar al pie de la planilla para correrse de cancha. */
+.courts__heads {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 0 4px;
+  background: var(--surface-2);
+  scrollbar-width: thin;
+}
+/* La barra se ve siempre, aunque el sistema oculte las barras nativas. */
+.courts__heads::-webkit-scrollbar {
+  height: 10px;
+}
+.courts__heads::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.courts__heads::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.courts__heads::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cgrid--heads {
+  padding-bottom: 6px;
+}
 .cgrid {
   display: grid;
   gap: 8px;

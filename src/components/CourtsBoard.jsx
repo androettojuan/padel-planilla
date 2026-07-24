@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { turnoKey, horarioLabel } from '../data/defaults'
 import { uid, formatMoney } from '../utils/helpers'
 import SlotCell, { MIN_JUGADORES } from './SlotCell'
@@ -29,10 +29,54 @@ function useIsMobile() {
   return mobile
 }
 
+/**
+ * Mantiene una barra de desplazamiento auxiliar en sincronía con el tablero.
+ *
+ * Con muchos horarios la tabla es larga y la barra propia del tablero queda al
+ * pie: para correrse a la última cancha había que bajar hasta el fondo. Esta
+ * segunda barra se pega arriba y desplaza lo mismo, sin moverse de lugar.
+ */
+function useBarraScroll(activa) {
+  const tablero = useRef(null)
+  const barra = useRef(null)
+  const [ancho, setAncho] = useState({ total: 0, visible: 0 })
+  const sincronizando = useRef(false)
+
+  useEffect(() => {
+    const el = tablero.current
+    if (!activa || !el) {
+      setAncho({ total: 0, visible: 0 })
+      return
+    }
+    const medir = () => setAncho({ total: el.scrollWidth, visible: el.clientWidth })
+    medir()
+    // El ancho cambia al agregar canchas/horarios o al redimensionar la ventana.
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    if (el.firstElementChild) ro.observe(el.firstElementChild)
+    return () => ro.disconnect()
+  }, [activa])
+
+  // Cada barra mueve a la otra; la bandera evita que se retroalimenten.
+  const sincronizar = useCallback((origen) => {
+    const destino = origen === 'barra' ? tablero.current : barra.current
+    const fuente = origen === 'barra' ? barra.current : tablero.current
+    if (!destino || !fuente || sincronizando.current) return
+    sincronizando.current = true
+    destino.scrollLeft = fuente.scrollLeft
+    requestAnimationFrame(() => {
+      sincronizando.current = false
+    })
+  }, [])
+
+  return { tablero, barra, ancho, sincronizar, visible: ancho.total > ancho.visible + 1 }
+}
+
 export default function CourtsBoard({ config, horarios, planilla, update, loading, sugerencias, onCommitNombre }) {
   const { canchas } = config
   const turnos = planilla.turnos || {}
   const isMobile = useIsMobile()
+  const scroll = useBarraScroll(!isMobile)
 
   const mutateSlot = (key, fn) =>
     update((prev) => {
@@ -110,26 +154,47 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
         </div>
       ) : (
         // Escritorio: tabla con horarios alineados y una columna por cancha.
-        <div className="courts__scroll">
-          <div className="cgrid" style={{ gridTemplateColumns: cols }}>
-            <div className="cgrid__corner" />
-            {canchas.map((c) => (
-              <div className="cgrid__chead" key={c.id}>
-                <span>{c.nombre}</span>
-                <span className="cgrid__chead-sub">{formatMoney(subtotal(c.id))}</span>
-              </div>
-            ))}
-
-            {horarios.map((h) => (
-              <Fragment key={h.id}>
-                <div className="cgrid__time">{horarioLabel(h)}</div>
-                {canchas.map((c) => (
-                  <Fragment key={c.id}>{renderSlot(c, h)}</Fragment>
-                ))}
-              </Fragment>
-            ))}
+        <>
+          {/* Los encabezados quedan pegados arriba y llevan la barra de
+              desplazamiento: se ve de qué cancha es cada columna y se puede
+              correr el tablero sin bajar hasta el pie de la planilla. */}
+          <div
+            className="courts__heads"
+            ref={scroll.barra}
+            onScroll={() => scroll.sincronizar('barra')}
+          >
+            {/* Mismo ancho exacto que el tablero para que las columnas coincidan. */}
+            <div
+              className="cgrid cgrid--heads"
+              style={{ gridTemplateColumns: cols, width: scroll.ancho.total || undefined }}
+            >
+              <div className="cgrid__corner" />
+              {canchas.map((c) => (
+                <div className="cgrid__chead" key={c.id}>
+                  <span>{c.nombre}</span>
+                  <span className="cgrid__chead-sub">{formatMoney(subtotal(c.id))}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          <div
+            className="courts__scroll"
+            ref={scroll.tablero}
+            onScroll={() => scroll.sincronizar('tablero')}
+          >
+            <div className="cgrid" style={{ gridTemplateColumns: cols }}>
+              {horarios.map((h) => (
+                <Fragment key={h.id}>
+                  <div className="cgrid__time">{horarioLabel(h)}</div>
+                  {canchas.map((c) => (
+                    <Fragment key={c.id}>{renderSlot(c, h)}</Fragment>
+                  ))}
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
