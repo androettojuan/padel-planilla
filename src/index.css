@@ -350,6 +350,11 @@ select {
   gap: 18px;
   align-items: start;
 }
+/* Sin esto la grilla de canchas ensancha la columna y termina desplazando la
+   página entera; con min-width 0 el desplazamiento queda dentro del tablero. */
+.layout__courts {
+  min-width: 0;
+}
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
@@ -462,6 +467,15 @@ select {
   align-items: stretch;
   min-width: min-content;
 }
+/* La columna de horarios queda fija al desplazarse en horizontal, para no
+   perder de vista a qué franja corresponde cada turno. */
+.cgrid__corner,
+.cgrid__time {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-2);
+}
 .cgrid__corner {
   /* celda vacía sobre la columna de horarios */
 }
@@ -543,7 +557,8 @@ select {
 }
 .player {
   display: grid;
-  grid-template-columns: 1fr 78px auto auto;
+  /* El nombre nunca baja de un ancho legible, aunque la columna sea angosta. */
+  grid-template-columns: minmax(84px, 1fr) 78px auto auto;
   gap: 6px;
   align-items: center;
 }

@@ -77,7 +77,11 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
     />
   )
 
-  const cols = `minmax(86px, max-content) repeat(${canchas.length}, minmax(0, 1fr))`
+  // Cada cancha tiene un ancho mínimo usable: con muchas canchas la planilla se
+  // desplaza en horizontal en vez de aplastar los campos hasta hacerlos ilegibles.
+  // La columna de horarios necesita entrar entera ("18:00 A 19:30"): si se
+  // achicara, su texto se saldría por encima de la primera cancha al desplazar.
+  const cols = `minmax(124px, max-content) repeat(${canchas.length}, minmax(264px, 1fr))`
 
   return (
     <div className="courts">
