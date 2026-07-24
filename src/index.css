@@ -526,8 +526,11 @@ select {
 }
 .cgrid__time {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
+  justify-content: center;
+  line-height: 1.35;
+  padding: 8px 10px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -537,6 +540,11 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
+}
+.cgrid__time-sep {
+  font-weight: 600;
+  font-size: 10px;
+  opacity: 0.55;
 }
 .cgrid__cell {
   background: var(--surface);

@@ -123,9 +123,9 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
 
   // Cada cancha tiene un ancho mínimo usable: con muchas canchas la planilla se
   // desplaza en horizontal en vez de aplastar los campos hasta hacerlos ilegibles.
-  // La columna de horarios necesita entrar entera ("18:00 A 19:30"): si se
-  // achicara, su texto se saldría por encima de la primera cancha al desplazar.
-  const cols = `minmax(124px, max-content) repeat(${canchas.length}, minmax(264px, 1fr))`
+  // La columna de horarios entra justa con las dos horas apiladas; si se
+  // achicara más, su texto se saldría por encima de la primera cancha.
+  const cols = `minmax(72px, max-content) repeat(${canchas.length}, minmax(264px, 1fr))`
 
   return (
     <div className="courts">
@@ -186,7 +186,19 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
             <div className="cgrid" style={{ gridTemplateColumns: cols }}>
               {horarios.map((h) => (
                 <Fragment key={h.id}>
-                  <div className="cgrid__time">{horarioLabel(h)}</div>
+                  {/* Las dos horas van una debajo de la otra: la columna ocupa
+                      bastante menos y el rango se sigue leyendo igual. */}
+                  <div className="cgrid__time">
+                    {h.desde || h.hasta ? (
+                      <>
+                        <span>{h.desde || '?'}</span>
+                        <span className="cgrid__time-sep">a</span>
+                        <span>{h.hasta || '?'}</span>
+                      </>
+                    ) : (
+                      horarioLabel(h)
+                    )}
+                  </div>
                   {canchas.map((c) => (
                     <Fragment key={c.id}>{renderSlot(c, h)}</Fragment>
                   ))}
