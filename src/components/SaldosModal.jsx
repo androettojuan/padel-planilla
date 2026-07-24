@@ -16,6 +16,7 @@ import { buildSaldos, aplicarPagosFIFO } from '../utils/saldos'
 import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
 import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
+import { useClubId } from '../hooks/useClub'
 import NombreInput from './NombreInput'
 
 // Medios con los que se puede saldar un fiado (todos menos "Anotado", que es
@@ -23,6 +24,7 @@ import NombreInput from './NombreInput'
 const MEDIOS_PAGO = PAGOS.filter((p) => p.id !== 'anotado')
 
 export default function SaldosModal({ jugadores = [], sugerencias = [], onCommitNombre, onClose }) {
+  const clubId = useClubId()
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
   const [cargos, setCargos] = useState([]) // deudas cargadas a mano
@@ -52,11 +54,11 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   useEffect(() => {
     let active = true
     Promise.all([
-      loadAllPlanillas(),
-      loadFiadoPagos(),
-      loadFiadoCargos(),
-      loadFiadoCortes(),
-      loadFiadoArchivados(),
+      loadAllPlanillas(clubId),
+      loadFiadoPagos(clubId),
+      loadFiadoCargos(clubId),
+      loadFiadoCortes(clubId),
+      loadFiadoArchivados(clubId),
     ])
       .then(([p, f, c, ct, ar]) => {
         if (!active) return
@@ -70,7 +72,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     return () => {
       active = false
     }
-  }, [])
+  }, [clubId])
 
   const { saldos, totalDeuda } = useMemo(
     () => buildSaldos(planillas || [], fiadoPagos, jugadores, cargos, cortes),
@@ -128,7 +130,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     setCobrando(null)
     setMonto('')
     try {
-      await saveFiadoPago(pago)
+      await saveFiadoPago(clubId, pago)
     } catch (e) {
       setFiadoPagos((prev) => prev.filter((p) => p.id !== pago.id))
       setError(e)
@@ -139,7 +141,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     const prev = fiadoPagos
     setFiadoPagos((l) => l.filter((p) => p.id !== id))
     try {
-      await deleteFiadoPago(id)
+      await deleteFiadoPago(clubId, id)
     } catch (e) {
       setFiadoPagos(prev)
       setError(e)
@@ -166,7 +168,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     setCgConcepto('')
     setCgMonto('')
     try {
-      await saveFiadoCargo(cargo)
+      await saveFiadoCargo(clubId, cargo)
     } catch (e) {
       setCargos((prev) => prev.filter((c) => c.id !== cargo.id))
       setError(e)
@@ -177,7 +179,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     const prev = cargos
     setCargos((l) => l.filter((c) => c.id !== id))
     try {
-      await deleteFiadoCargo(id)
+      await deleteFiadoCargo(clubId, id)
     } catch (e) {
       setCargos(prev)
       setError(e)
@@ -192,7 +194,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     setArchivados((l) => [...l.filter((x) => x.nombreKey !== s.nombreKey), a])
     setExpandido(null)
     try {
-      await saveFiadoArchivado(a)
+      await saveFiadoArchivado(clubId, a)
     } catch (e) {
       setArchivados(prev)
       setError(e)
@@ -203,7 +205,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     const prev = archivados
     setArchivados((l) => l.filter((x) => x.nombreKey !== s.nombreKey))
     try {
-      await deleteFiadoArchivado(s.nombreKey)
+      await deleteFiadoArchivado(clubId, s.nombreKey)
     } catch (e) {
       setArchivados(prev)
       setError(e)

@@ -8,7 +8,7 @@ import { emptyPlanilla } from '../data/defaults'
  * conflictos: el último guardado gana. La suscripción mantiene sincronizado el
  * estado cuando el documento cambia y no hay ediciones locales pendientes.
  */
-export function usePlanilla(dateKey, enabled = true) {
+export function usePlanilla(clubId, dateKey) {
   const [planilla, setPlanilla] = useState(emptyPlanilla())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -19,10 +19,11 @@ export function usePlanilla(dateKey, enabled = true) {
   planillaRef.current = planilla
 
   useEffect(() => {
-    if (!enabled) return
+    if (!clubId) return
     setLoading(true)
     dirtyRef.current = false
     const unsub = subscribePlanilla(
+      clubId,
       dateKey,
       (data) => {
         // Solo pisamos el estado local si no hay cambios sin guardar.
@@ -38,7 +39,7 @@ export function usePlanilla(dateKey, enabled = true) {
       unsub()
       if (saveTimer.current) clearTimeout(saveTimer.current)
     }
-  }, [dateKey, enabled])
+  }, [clubId, dateKey])
 
   const persist = useCallback(
     (next) => {
@@ -46,14 +47,14 @@ export function usePlanilla(dateKey, enabled = true) {
       if (saveTimer.current) clearTimeout(saveTimer.current)
       saveTimer.current = setTimeout(async () => {
         try {
-          await savePlanilla(dateKey, next)
+          await savePlanilla(clubId, dateKey, next)
           dirtyRef.current = false
         } catch (err) {
           setError(err)
         }
       }, 500)
     },
-    [dateKey],
+    [clubId, dateKey],
   )
 
   const update = useCallback(

@@ -10,11 +10,9 @@ export const PAGOS = [
 
 export const PAGOS_BY_ID = Object.fromEntries(PAGOS.map((p) => [p.id, p]))
 
+// El nombre y la ubicación del club no están acá: viven en clubs/{clubId},
+// porque la app maneja varios clubes y cada uno tiene su propia configuración.
 export const DEFAULT_CONFIG = {
-  club: {
-    nombre: 'Carest Padel',
-    ubicacion: 'General Levalle · Cba.',
-  },
   canchas: [
     { id: 'c1', nombre: 'Cancha 1' },
     { id: 'c2', nombre: 'Cancha 2' },

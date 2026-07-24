@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { isFirebaseConfigured } from './firebase/config'
-import { useAuth } from './hooks/useAuth'
+import { isFirebaseConfigured, isEmulator } from './firebase/config'
+import { actualizarClub } from './firebase/clubs'
+import { useSesion } from './hooks/useSesion'
+import { ClubProvider } from './hooks/useClub'
 import { useConfig } from './hooks/useConfig'
 import { useJugadores } from './hooks/useJugadores'
 import { usePlanilla } from './hooks/usePlanilla'
 import { todayKey } from './utils/helpers'
-import { horariosForDate, DEFAULT_CONFIG } from './data/defaults'
+import { horariosForDate } from './data/defaults'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -14,6 +16,7 @@ import CuentasPanel from './components/CuentasPanel'
 import ConfigModal from './components/ConfigModal'
 import ResumenMensualModal from './components/ResumenMensualModal'
 import SaldosModal from './components/SaldosModal'
+import AdminClubesModal from './components/AdminClubesModal'
 import LoginScreen from './components/LoginScreen'
 
 export default function App() {
@@ -21,110 +24,176 @@ export default function App() {
   const [configOpen, setConfigOpen] = useState(false)
   const [resumenOpen, setResumenOpen] = useState(false)
   const [saldosOpen, setSaldosOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
 
-  const { user, authorized, loading: authLoading, error: authError, signIn, signOut } = useAuth()
+  const sesion = useSesion()
+  const {
+    user,
+    superAdmin,
+    clubs,
+    club,
+    clubId,
+    autorizado,
+    loading: authLoading,
+    error: authError,
+    cambiarClub,
+    recargarClubs,
+    setClubLocal,
+    signIn,
+    signOut,
+  } = sesion
 
-  const { config, saveConfig } = useConfig(authorized)
-  const { jugadores, saveJugador, deleteJugador, upsertNombre } = useJugadores(authorized)
-  const { planilla, update, loading, error } = usePlanilla(dateKey, authorized)
+  const { config, saveConfig } = useConfig(clubId)
+  const { jugadores, saveJugador, deleteJugador, upsertNombre } = useJugadores(clubId)
+  const { planilla, update, loading, error } = usePlanilla(clubId, dateKey)
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
   const horarios = useMemo(() => horariosForDate(config, dateKey), [config, dateKey])
   // Sugerencias para autocompletar: directorio (activos) + nombres ya usados hoy.
   const sugerencias = useMemo(() => computeSugerencias(jugadores, planilla), [jugadores, planilla])
 
-  // Antes de autorizar: pantalla de carga / login / no autorizado.
+  // Nombre y ubicación del club se guardan en clubs/{clubId}, no en su config.
+  const saveClub = async (cambios) => {
+    setClubLocal(cambios) // optimista
+    await actualizarClub(clubId, cambios)
+  }
+
+  // Antes de autorizar: pantalla de carga / login / sin club asignado.
   if (authLoading) {
     return <div className="loading loading--full">Conectando…</div>
   }
-  if (!authorized) {
+  if (!autorizado) {
+    return <LoginScreen user={user} onSignIn={signIn} onSignOut={signOut} error={authError} />
+  }
+
+  // Super admin recién llegado: todavía no es miembro de ningún club, así que
+  // solo puede administrar (crear clubes y darse de alta en uno).
+  if (!clubId) {
     return (
-      <LoginScreen
-        user={user}
-        onSignIn={signIn}
-        onSignOut={signOut}
-        error={authError}
-        club={DEFAULT_CONFIG.club}
-      />
+      <div className="app">
+        <div className="banner banner--warn">
+          Tu cuenta es super admin pero no pertenece a ningún club. Creá uno y agregate como
+          usuario para poder usar la planilla.
+        </div>
+        <div className="login">
+          <div className="login__card">
+            <h1 className="login__title">Administración</h1>
+            <button className="btn btn--primary" onClick={() => setAdminOpen(true)}>
+              Abrir administración de clubes
+            </button>
+            <button className="btn" onClick={signOut}>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+        {adminOpen && (
+          <AdminClubesModal
+            emailActual={user?.email}
+            onCambios={recargarClubs}
+            onClose={() => setAdminOpen(false)}
+          />
+        )}
+      </div>
     )
   }
 
   return (
-    <div className="app">
-      <Header
-        club={config.club}
-        totals={totals}
-        user={user}
-        onSignOut={signOut}
-        onOpenConfig={() => setConfigOpen(true)}
-      />
+    <ClubProvider value={{ clubId, club, clubs, superAdmin }}>
+      <div className="app">
+        <Header
+          club={club}
+          clubs={clubs}
+          onCambiarClub={cambiarClub}
+          totals={totals}
+          user={user}
+          superAdmin={superAdmin}
+          onSignOut={signOut}
+          onOpenConfig={() => setConfigOpen(true)}
+          onOpenAdmin={() => setAdminOpen(true)}
+        />
 
-      {!isFirebaseConfigured && (
-        <div className="banner banner--warn">
-          Modo demo: Firebase no está configurado. Los datos se guardan solo en este
-          navegador (localStorage). Completá <code>.env</code> para sincronizar.
-        </div>
-      )}
-      {error && (
-        <div className="banner banner--error">Error al leer/guardar la planilla: {error.message}</div>
-      )}
+        {!isFirebaseConfigured && (
+          <div className="banner banner--warn">
+            Modo demo: Firebase no está configurado. Los datos se guardan solo en este
+            navegador (localStorage). Completá <code>.env</code> para sincronizar.
+          </div>
+        )}
+        {isEmulator && (
+          <div className="banner banner--warn">
+            Emulador local: estás trabajando sobre la base de prueba, no sobre producción.
+          </div>
+        )}
+        {error && (
+          <div className="banner banner--error">Error al leer/guardar la planilla: {error.message}</div>
+        )}
 
-      <DateToolbar
-        dateKey={dateKey}
-        onChange={setDateKey}
-        totals={totals}
-        onOpenResumen={() => setResumenOpen(true)}
-        onOpenSaldos={() => setSaldosOpen(true)}
-      />
+        <DateToolbar
+          dateKey={dateKey}
+          onChange={setDateKey}
+          totals={totals}
+          onOpenResumen={() => setResumenOpen(true)}
+          onOpenSaldos={() => setSaldosOpen(true)}
+        />
 
-      <main className="layout">
-        <section className="layout__courts">
-          <CourtsBoard
+        <main className="layout">
+          <section className="layout__courts">
+            <CourtsBoard
+              config={config}
+              horarios={horarios}
+              planilla={planilla}
+              update={update}
+              loading={loading}
+              sugerencias={sugerencias}
+              onCommitNombre={upsertNombre}
+            />
+          </section>
+          <aside className="layout__consumos">
+            <CuentasPanel config={config} planilla={planilla} update={update} />
+            <ConsumosPanel
+              config={config}
+              planilla={planilla}
+              update={update}
+              sugerencias={sugerencias}
+              onCommitNombre={upsertNombre}
+            />
+          </aside>
+        </main>
+
+        {configOpen && (
+          <ConfigModal
             config={config}
-            horarios={horarios}
-            planilla={planilla}
-            update={update}
-            loading={loading}
+            club={club}
+            onSave={saveConfig}
+            onSaveClub={saveClub}
+            onClose={() => setConfigOpen(false)}
+            jugadores={jugadores}
+            onSaveJugador={saveJugador}
+            onDeleteJugador={deleteJugador}
+          />
+        )}
+
+        {resumenOpen && (
+          <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
+        )}
+
+        {saldosOpen && (
+          <SaldosModal
+            jugadores={jugadores}
             sugerencias={sugerencias}
             onCommitNombre={upsertNombre}
+            onClose={() => setSaldosOpen(false)}
           />
-        </section>
-        <aside className="layout__consumos">
-          <CuentasPanel config={config} planilla={planilla} update={update} />
-          <ConsumosPanel
-            config={config}
-            planilla={planilla}
-            update={update}
-            sugerencias={sugerencias}
-            onCommitNombre={upsertNombre}
+        )}
+
+        {adminOpen && superAdmin && (
+          <AdminClubesModal
+            emailActual={user?.email}
+            onCambios={recargarClubs}
+            onClose={() => setAdminOpen(false)}
           />
-        </aside>
-      </main>
-
-      {configOpen && (
-        <ConfigModal
-          config={config}
-          onSave={saveConfig}
-          onClose={() => setConfigOpen(false)}
-          jugadores={jugadores}
-          onSaveJugador={saveJugador}
-          onDeleteJugador={deleteJugador}
-        />
-      )}
-
-      {resumenOpen && (
-        <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
-      )}
-
-      {saldosOpen && (
-        <SaldosModal
-          jugadores={jugadores}
-          sugerencias={sugerencias}
-          onCommitNombre={upsertNombre}
-          onClose={() => setSaldosOpen(false)}
-        />
-      )}
-    </div>
+        )}
+      </div>
+    </ClubProvider>
   )
 }
 

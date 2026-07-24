@@ -1,0 +1,10 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "miembros",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [{ "fieldPath": "email", "order": "ASCENDING" }]
+    }
+  ],
+  "fieldOverrides": []
+}

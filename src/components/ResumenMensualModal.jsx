@@ -4,10 +4,12 @@ import { loadFiadoPagos } from '../firebase/fiado'
 import { resumenMensual } from '../utils/resumen'
 import { PAGOS } from '../data/defaults'
 import { formatMoney, formatMonth, formatDayShort, shiftMonth } from '../utils/helpers'
+import { useClubId } from '../hooks/useClub'
 
 const medioLabel = (id) => PAGOS.find((p) => p.id === id)?.label || id
 
 export default function ResumenMensualModal({ monthKey, onClose }) {
+  const clubId = useClubId()
   const [mes, setMes] = useState(monthKey)
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
@@ -17,24 +19,24 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
     let active = true
     setPlanillas(null)
     setError(null)
-    loadMonth(mes)
+    loadMonth(clubId, mes)
       .then((p) => active && setPlanillas(p))
       .catch((e) => active && setError(e))
     return () => {
       active = false
     }
-  }, [mes])
+  }, [clubId, mes])
 
   // Los pagos de fiado se cargan una vez (todos) y se filtran por mes de pago.
   useEffect(() => {
     let active = true
-    loadFiadoPagos()
+    loadFiadoPagos(clubId)
       .then((p) => active && setFiadoPagos(p))
       .catch(() => {})
     return () => {
       active = false
     }
-  }, [])
+  }, [clubId])
 
   const pagosMes = useMemo(
     () => fiadoPagos.filter((p) => (p.fecha || '').slice(0, 7) === mes),

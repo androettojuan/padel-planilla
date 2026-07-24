@@ -15,6 +15,18 @@ export function normalizeNombre(nombre) {
     .trim()
 }
 
+// Identificador legible para usar como id de documento: "Carest Padel" →
+// "carest-padel". Sin acentos ni símbolos, porque va en la ruta de Firestore.
+export function slugify(texto) {
+  return (texto || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+}
+
 const money = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',

@@ -7,37 +7,47 @@ import {
 import { uid, normalizeNombre } from '../utils/helpers'
 
 /**
- * Mantiene el directorio de jugadores sincronizado y expone helpers para
- * editarlo. `upsertNombre` implementa el alta automática (modo híbrido): cuando
- * se confirma un nombre que todavía no está en el directorio, lo agrega solo.
+ * Mantiene el directorio de jugadores del club sincronizado y expone helpers
+ * para editarlo. `upsertNombre` implementa el alta automática (modo híbrido):
+ * cuando se confirma un nombre que todavía no está en el directorio, lo agrega.
  */
-export function useJugadores(enabled = true) {
+export function useJugadores(clubId) {
   const [jugadores, setJugadores] = useState([])
   const jugadoresRef = useRef(jugadores)
   jugadoresRef.current = jugadores
 
   useEffect(() => {
-    if (!enabled) return
+    if (!clubId) {
+      setJugadores([])
+      return
+    }
     const unsub = subscribeJugadores(
+      clubId,
       (list) => setJugadores(list),
       () => {},
     )
     return unsub
-  }, [enabled])
+  }, [clubId])
 
-  const saveJugador = useCallback((j) => {
-    setJugadores((prev) =>
-      prev.some((p) => p.id === j.id)
-        ? prev.map((p) => (p.id === j.id ? { ...p, ...j } : p))
-        : [...prev, j],
-    )
-    return persistJugador(j)
-  }, [])
+  const saveJugador = useCallback(
+    (j) => {
+      setJugadores((prev) =>
+        prev.some((p) => p.id === j.id)
+          ? prev.map((p) => (p.id === j.id ? { ...p, ...j } : p))
+          : [...prev, j],
+      )
+      return persistJugador(clubId, j)
+    },
+    [clubId],
+  )
 
-  const deleteJugador = useCallback((id) => {
-    setJugadores((prev) => prev.filter((p) => p.id !== id))
-    return removeJugador(id)
-  }, [])
+  const deleteJugador = useCallback(
+    (id) => {
+      setJugadores((prev) => prev.filter((p) => p.id !== id))
+      return removeJugador(clubId, id)
+    },
+    [clubId],
+  )
 
   // Alta automática al confirmar un nombre nuevo (case-insensitive).
   const upsertNombre = useCallback(

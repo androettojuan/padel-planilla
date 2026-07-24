@@ -14,13 +14,20 @@ const DOW = [
 
 export default function ConfigModal({
   config,
+  club,
   onSave,
+  onSaveClub,
   onClose,
   jugadores = [],
   onSaveJugador,
   onDeleteJugador,
 }) {
   const [draft, setDraft] = useState(() => structuredClone(config))
+  // El nombre y la ubicación viven en el documento del club, no en su config.
+  const [clubDraft, setClubDraft] = useState(() => ({
+    nombre: club?.nombre || '',
+    ubicacion: club?.ubicacion || '',
+  }))
   const [saving, setSaving] = useState(false)
   // Pestaña de horarios activa: null = "Por defecto", o un día de la semana (0-6).
   const [dow, setDow] = useState(null)
@@ -95,6 +102,12 @@ export default function ConfigModal({
     }
     try {
       await onSave(clean)
+      if (onSaveClub) {
+        await onSaveClub({
+          nombre: clubDraft.nombre.trim() || club?.nombre || 'Club',
+          ubicacion: clubDraft.ubicacion.trim(),
+        })
+      }
       onClose()
     } finally {
       setSaving(false)
@@ -119,14 +132,14 @@ export default function ConfigModal({
               <input
                 className="cfg-input"
                 placeholder="Nombre del club"
-                value={draft.club?.nombre || ''}
-                onChange={(e) => set({ club: { ...draft.club, nombre: e.target.value } })}
+                value={clubDraft.nombre}
+                onChange={(e) => setClubDraft((c) => ({ ...c, nombre: e.target.value }))}
               />
               <input
                 className="cfg-input"
                 placeholder="Ubicación"
-                value={draft.club?.ubicacion || ''}
-                onChange={(e) => set({ club: { ...draft.club, ubicacion: e.target.value } })}
+                value={clubDraft.ubicacion}
+                onChange={(e) => setClubDraft((c) => ({ ...c, ubicacion: e.target.value }))}
               />
             </div>
           </section>
