@@ -11,6 +11,7 @@
     "emulators": "firebase emulators:start",
     "db:dump": "node scripts/dump-prod.mjs",
     "db:seed": "node scripts/seed-emulator.mjs",
+    "db:demo": "node scripts/seed-demo.mjs",
     "db:migrate": "node scripts/migrate-multiclub.mjs",
     "test:rules": "node scripts/test-rules.mjs"
   },
