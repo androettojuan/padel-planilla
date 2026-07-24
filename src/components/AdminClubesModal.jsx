@@ -23,6 +23,8 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
   const [nuevoUbicacion, setNuevoUbicacion] = useState('')
   const [nuevoEmail, setNuevoEmail] = useState('')
   const [guardando, setGuardando] = useState(false)
+  // Desactivar un club deja afuera a toda su gente: se confirma antes.
+  const [confirmandoBaja, setConfirmandoBaja] = useState(false)
 
   const recargarClubs = async () => {
     try {
@@ -105,6 +107,7 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
 
   const handleActivo = async (activo) => {
     setError(null)
+    setConfirmandoBaja(false)
     try {
       await actualizarClub(seleccionado, { activo })
       await recargarClubs()
@@ -130,7 +133,7 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
           {/* Alta de club */}
           <section className="cfg-section">
             <h3 className="cfg-section__title">Nuevo club</h3>
-            <form className="cfg-row" onSubmit={handleCrear}>
+            <form className="cfg-row admin-row" onSubmit={handleCrear}>
               <input
                 className="cfg-input"
                 placeholder="Nombre del club"
@@ -177,12 +180,36 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
             <section className="cfg-section">
               <div className="cfg-section__head">
                 <h3 className="cfg-section__title">Usuarios de {club.nombre}</h3>
-                <button className="btn btn--ghost" onClick={() => handleActivo(club.activo === false)}>
-                  {club.activo === false ? 'Reactivar club' : 'Desactivar club'}
-                </button>
+                {club.activo === false ? (
+                  <button className="btn btn--ghost-sm" onClick={() => handleActivo(true)}>
+                    Reactivar club
+                  </button>
+                ) : (
+                  <button className="btn btn--ghost-sm" onClick={() => setConfirmandoBaja(true)}>
+                    Desactivar club
+                  </button>
+                )}
               </div>
 
-              <form className="cfg-row" onSubmit={handleAgregarMiembro}>
+              {confirmandoBaja && (
+                <div className="admin-confirm">
+                  <p className="admin-confirm__texto">
+                    Al desactivar <b>{club.nombre}</b> sus usuarios dejan de entrar y el club
+                    desaparece del selector. Los datos no se borran y se puede reactivar cuando
+                    quieras.
+                  </p>
+                  <div className="admin-confirm__acciones">
+                    <button className="btn" onClick={() => setConfirmandoBaja(false)}>
+                      Cancelar
+                    </button>
+                    <button className="btn btn--danger" onClick={() => handleActivo(false)}>
+                      Desactivar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <form className="cfg-row admin-row" onSubmit={handleAgregarMiembro}>
                 <input
                   className="cfg-input"
                   type="email"
@@ -206,7 +233,7 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
                 <p className="cfg-hint">El club no tiene usuarios: nadie puede entrar todavía.</p>
               )}
               {miembros.map((m) => (
-                <div className="cfg-row" key={m.id || m.email}>
+                <div className="cfg-row admin-row" key={m.id || m.email}>
                   <span className="admin-club__nombre">{m.email}</span>
                   <button
                     className="player__del"

@@ -114,7 +114,36 @@ select {
 }
 .admin-club__nombre {
   flex: 1;
+  min-width: 0;
   font-weight: 600;
+  /* Los emails largos se parten en vez de estirar la fila. */
+  overflow-wrap: anywhere;
+}
+/* Confirmación antes de desactivar un club. */
+.admin-confirm {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.admin-confirm__texto {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #78350f;
+}
+.admin-confirm__acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+/* Formularios del panel: si no entran en una línea, bajan a la siguiente. */
+.admin-row {
+  flex-wrap: wrap;
+}
+.admin-row .cfg-input {
+  min-width: 140px;
 }
 .admin-club__id {
   font-size: 12px;
@@ -255,6 +284,10 @@ select {
   font-size: 13px;
   font-weight: 600;
   transition: all 0.12s ease;
+  /* Dentro de un contenedor flex el botón no se aplasta: si falta lugar, se
+     achica el texto de al lado, no el botón (su texto se salía del borde). */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .btn:hover {
   background: var(--surface-2);
@@ -290,6 +323,15 @@ select {
 .btn--primary:hover {
   background: var(--primary-dark);
 }
+.btn--danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.btn--danger:hover {
+  background: #b91c1c;
+}
+
 .btn--add {
   padding: 3px 9px;
   font-size: 12px;
@@ -1061,6 +1103,8 @@ select {
 .modal__body {
   padding: 8px 20px 16px;
   overflow-y: auto;
+  /* El contenido se acomoda al ancho del modal: nunca scroll horizontal. */
+  overflow-x: hidden;
 }
 .modal__footer {
   display: flex;
@@ -1081,6 +1125,8 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 .cfg-actions {
@@ -1097,6 +1143,10 @@ select {
 }
 .cfg-section__head .cfg-section__title {
   margin: 0;
+  /* Un título largo ("Usuarios de …") se parte en vez de empujar al botón
+     fuera del modal. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .cfg-hint {
   margin: -4px 0 10px;
