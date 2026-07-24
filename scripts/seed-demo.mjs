@@ -11,7 +11,7 @@ import { getDb, args } from './lib/admin.mjs'
 import { getAuth } from 'firebase-admin/auth'
 
 const opts = args()
-const superEmail = (opts.super || 'androettop@gmail.com').toLowerCase()
+const superEmail = (opts.super || 'juan.androetto36@gmail.com').toLowerCase()
 const operadorEmail = (opts.operador || 'operador@example.com').toLowerCase()
 
 const db = getDb({ emulator: true })
