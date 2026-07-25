@@ -12,7 +12,9 @@ propios datos.
 - **Grilla de turnos** por cancha y franja horaria. En cada turno se anota el
   jugador, el monto y el tipo de pago (Contado / Mercado Pago / Anotado).
 - **Panel de consumos** con selector de productos del club (cerveza, agua, etc.),
-  cantidad y tipo de pago.
+  cantidad y tipo de pago. En clubes de 3 canchas o más, Cuentas y Consumos
+  dejan la columna del costado y se abren desde la solapa del borde derecho,
+  para que la planilla use todo el ancho de la pantalla.
 - **Totales del día** discriminados por tipo de pago, en tiempo real.
 - **Navegación por fecha**: cada día tiene su propia planilla.
 - **Saldos / fiados** y **resumen mensual** por club.

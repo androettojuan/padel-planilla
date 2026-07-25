@@ -13,14 +13,32 @@ import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
 import ConsumosPanel from './components/ConsumosPanel'
 import CuentasPanel from './components/CuentasPanel'
+import PanelesDrawer, { SolapaPaneles } from './components/PanelesDrawer'
 import ConfigModal from './components/ConfigModal'
 import ResumenMensualModal from './components/ResumenMensualModal'
 import SaldosModal from './components/SaldosModal'
 import AdminClubesModal from './components/AdminClubesModal'
 import LoginScreen from './components/LoginScreen'
 
+// A partir de esta cantidad de canchas la planilla se queda con todo el ancho y
+// Cuentas/Consumos pasan al cajón lateral. Con tres canchas la columna del
+// costado ya deja al tablero sin lugar y aparece el desplazamiento horizontal.
+const CANCHAS_ANCHO_COMPLETO = 3
+
+// Ancho cómodo para una cancha (nombre + monto + estado de pago). Más que esto
+// solo estira los campos al pedo, así que en pantallas grandes la planilla se
+// queda en este ancho y se centra en vez de ocupar todo.
+const ANCHO_CANCHA = 400
+const ANCHO_COL_HORARIOS = 72
+const GAP_CANCHAS = 8
+const PADDING_APP = 40
+// Más allá de cuatro canchas la planilla no sigue creciendo: las columnas se
+// achican hasta su mínimo y, si aun así no entran, el tablero se desplaza.
+const CANCHAS_PARA_ANCHO_MAX = 4
+
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [resumenOpen, setResumenOpen] = useState(false)
   const [saldosOpen, setSaldosOpen] = useState(false)
@@ -56,6 +74,29 @@ export default function App() {
   const saveClub = async (cambios) => {
     setClubLocal(cambios) // optimista
     await actualizarClub(clubId, cambios)
+  }
+
+  // Con muchas canchas los paneles se muestran en el cajón lateral en vez de la
+  // columna de la derecha; se arman una sola vez y van a donde corresponda.
+  const canchas = (config.canchas || []).length
+  const anchoCompleto = canchas >= CANCHAS_ANCHO_COMPLETO
+  // Tope de ancho según cuántas canchas hay que mostrar: con pocas canchas la
+  // planilla queda centrada; con muchas usa toda la pantalla.
+  const anchoMax =
+    PADDING_APP +
+    ANCHO_COL_HORARIOS +
+    Math.min(canchas, CANCHAS_PARA_ANCHO_MAX) * (ANCHO_CANCHA + GAP_CANCHAS)
+  const paneles = {
+    cuentas: <CuentasPanel config={config} planilla={planilla} update={update} />,
+    consumos: (
+      <ConsumosPanel
+        config={config}
+        planilla={planilla}
+        update={update}
+        sugerencias={sugerencias}
+        onCommitNombre={upsertNombre}
+      />
+    ),
   }
 
   // Antes de autorizar: pantalla de carga / login / sin club asignado.
@@ -99,7 +140,10 @@ export default function App() {
 
   return (
     <ClubProvider value={{ clubId, club, clubs, superAdmin }}>
-      <div className="app">
+      <div
+        className={`app ${anchoCompleto ? 'app--ancho' : ''}`}
+        style={anchoCompleto ? { maxWidth: `${anchoMax}px` } : undefined}
+      >
         <Header
           club={club}
           clubs={clubs}
@@ -135,7 +179,7 @@ export default function App() {
           onOpenSaldos={() => setSaldosOpen(true)}
         />
 
-        <main className="layout">
+        <main className={`layout ${anchoCompleto ? 'layout--ancho' : ''}`}>
           <section className="layout__courts">
             <CourtsBoard
               config={config}
@@ -147,17 +191,21 @@ export default function App() {
               onCommitNombre={upsertNombre}
             />
           </section>
-          <aside className="layout__consumos">
-            <CuentasPanel config={config} planilla={planilla} update={update} />
-            <ConsumosPanel
-              config={config}
-              planilla={planilla}
-              update={update}
-              sugerencias={sugerencias}
-              onCommitNombre={upsertNombre}
-            />
-          </aside>
+          {!anchoCompleto && (
+            <aside className="layout__consumos">
+              {paneles.cuentas}
+              {paneles.consumos}
+            </aside>
+          )}
         </main>
+
+        {anchoCompleto && !drawerOpen && (
+          <SolapaPaneles onOpen={() => setDrawerOpen(true)} pendiente={totals.pendiente} />
+        )}
+
+        {anchoCompleto && drawerOpen && (
+          <PanelesDrawer onClose={() => setDrawerOpen(false)} paneles={paneles} />
+        )}
 
         {configOpen && (
           <ConfigModal

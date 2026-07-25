@@ -43,6 +43,12 @@ select {
   margin: 0 auto;
   padding: 18px 20px 60px;
 }
+/* Club con muchas canchas: se suelta el ancho máximo para que entren todas sin
+   cortarse. La solapa del cajón flota por encima de las canchas en vez de
+   reservarse una franja propia. */
+.app--ancho {
+  max-width: none;
+}
 
 /* ---------- Header ---------- */
 .header {
@@ -355,10 +361,94 @@ select {
 .layout__courts {
   min-width: 0;
 }
+/* Club con muchas canchas: la planilla se queda con todo el ancho y Cuentas /
+   Consumos pasan al cajón lateral. */
+.layout--ancho {
+  grid-template-columns: 1fr;
+}
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------- Cajón lateral (Cuentas / Consumos) ---------- */
+.paneles-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 9px;
+  border: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: -4px 0 18px rgba(15, 23, 42, 0.22);
+}
+.paneles-tab:hover {
+  background: var(--primary-dark);
+  padding-right: 13px;
+}
+.paneles-tab__flecha {
+  font-size: 18px;
+  line-height: 1;
+}
+.paneles-tab__texto {
+  /* De arriba hacia abajo, como las solapas de las carpetas. */
+  writing-mode: vertical-rl;
+}
+.paneles-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fbbf24;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 45;
+}
+.drawer {
+  background: var(--surface-2);
+  width: min(420px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.25);
+  animation: drawer-in 0.18s ease-out;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    animation: none;
+  }
+}
+/* Solo el botón de cerrar: cada panel ya trae su propio título. */
+.drawer__head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 10px 0;
+}
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 14px 16px;
 }
 .section-title {
   margin: 0;
