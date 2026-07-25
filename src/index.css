@@ -1440,6 +1440,28 @@ select {
   font-size: 12px;
   color: #b45309;
 }
+.cfg-regla__pie {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+/* Rótulos que van guiando la carga: 1 · canchas, 2 · días, 3 · horas. */
+.cfg-paso {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cfg-lista-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cfg-lista-head {
+  margin: 14px 0 8px;
+}
 
 /* Franjas que la cancha hereda del club: solo para mirar */
 .cfg-franjas-ro {

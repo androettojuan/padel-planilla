@@ -283,27 +283,22 @@ export default function ConfigModal({
           {/* Horarios */}
           <section className="cfg-section">
             <div className="cfg-section__head">
-              <h3 className="cfg-section__title">Franjas horarias</h3>
-              {editable && (
-                <div className="cfg-actions">
-                  <button className="btn btn--add" onClick={sortHorarios}>
-                    Ordenar
-                  </button>
-                  <button className="btn btn--add" onClick={addHorario}>
-                    + Franja
-                  </button>
-                </div>
-              )}
+              <h3 className="cfg-section__title">Horarios de los turnos</h3>
             </div>
+            <p className="cfg-hint">
+              Son los turnos que aparecen en la planilla de cada día: a qué hora
+              empieza cada uno y cuánto dura.
+            </p>
 
-            {/* Alcance: el horario del club o el propio de una cancha. */}
+            {/* Paso 1: de qué cancha y de qué día es el horario que se edita. */}
+            <p className="cfg-paso">1 · ¿De qué canchas es este horario?</p>
             <div className="cfg-scopes">
               <button
                 type="button"
                 className={`cfg-scope ${alcance === null ? 'is-active' : ''}`}
                 onClick={() => setAlcance(null)}
               >
-                Club
+                Todas las canchas
               </button>
               {draft.canchas.map((c) => (
                 <button
@@ -319,28 +314,36 @@ export default function ConfigModal({
                 </button>
               ))}
             </div>
+            <p className="cfg-hint">
+              {alcance === null
+                ? 'Este es el horario general del club. El punto verde marca las canchas que abren en otro horario.'
+                : propio
+                  ? `${cancha?.nombre || 'Esta cancha'} abre en su propio horario, distinto al del club.`
+                  : `${cancha?.nombre || 'Esta cancha'} usa el horario general del club.`}
+            </p>
 
             {alcance !== null && (
               <div className="cfg-dow-actions">
                 {propio ? (
                   <button className="btn btn--add" onClick={volverAlDelClub}>
-                    Usar el horario del club
+                    Volver a usar el horario del club
                   </button>
                 ) : (
                   <button className="btn btn--add" onClick={darHorarioPropio}>
-                    Darle horario propio a esta cancha
+                    Darle a esta cancha un horario propio
                   </button>
                 )}
               </div>
             )}
 
+            <p className="cfg-paso">2 · ¿Qué días?</p>
             <div className="cfg-dows">
               <button
                 type="button"
                 className={`cfg-dow ${dow === null ? 'is-active' : ''}`}
                 onClick={() => setDow(null)}
               >
-                Por defecto
+                Todos los días
               </button>
               {DOW.map((d) => (
                 <button
@@ -350,7 +353,7 @@ export default function ConfigModal({
                     Array.isArray(byDow[d.id]) ? 'has-override' : ''
                   }`}
                   onClick={() => setDow(d.id)}
-                  title={Array.isArray(byDow[d.id]) ? 'Tiene horario propio' : 'Usa el por defecto'}
+                  title={Array.isArray(byDow[d.id]) ? 'Tiene horario propio' : 'Usa el de todos los días'}
                 >
                   {d.label}
                 </button>
@@ -359,16 +362,18 @@ export default function ConfigModal({
 
             <p className="cfg-hint">
               {!propio
-                ? 'Esta cancha usa el horario del club. Dale uno propio si abre en otros horarios.'
+                ? 'Elegí primero darle horario propio a esta cancha para poder editarlo.'
                 : dow === null
-                  ? 'Horario base que usan todos los días sin uno propio. Poné a qué hora abre y cierra, cuánto dura el turno y generá las franjas; después podés retocarlas.'
+                  ? 'Estos turnos valen para toda la semana. Si algún día es distinto, elegilo arriba y personalizalo.'
                   : hasOverride
-                    ? 'Este día tiene su propio horario.'
-                    : 'Este día usa el horario por defecto.'}
+                    ? 'Este día tiene turnos propios, distintos al resto de la semana.'
+                    : 'Este día usa los mismos turnos que el resto de la semana.'}
             </p>
 
             {editable && (
-              <div className="cfg-regla">
+              <>
+                <p className="cfg-paso">3 · ¿Desde cuándo, hasta cuándo y cada cuánto?</p>
+                <div className="cfg-regla">
                 <label className="cfg-regla__campo">
                   <span>Abre</span>
                   <input
@@ -404,28 +409,55 @@ export default function ConfigModal({
                   </select>
                 </label>
                 <button className="btn btn--primary cfg-regla__btn" onClick={generarHorarios}>
-                  Generar franjas
+                  Generar horarios
                 </button>
+                <p className="cfg-regla__pie">
+                  Al generar se reemplaza la lista de abajo por los turnos que salen de estos
+                  datos. Después podés corregir, borrar o agregar los que quieras.
+                </p>
                 {!coincide && horarios.length > 0 && (
                   <p className="cfg-regla__aviso">
-                    Las franjas de abajo no siguen esta regla: generarlas las reemplaza.
+                    Los turnos de abajo no coinciden con estos datos: si generás, se reemplazan.
                   </p>
                 )}
-              </div>
+                </div>
+              </>
             )}
 
             {dow !== null && (
               <div className="cfg-dow-actions">
                 {hasOverride ? (
                   <button className="btn btn--add" onClick={usarDefaultDow}>
-                    Volver al horario por defecto
+                    Que este día use el horario de siempre
                   </button>
                 ) : (
                   <button className="btn btn--add" onClick={personalizarDow}>
-                    Personalizar este día
+                    Darle a este día un horario propio
                   </button>
                 )}
               </div>
+            )}
+
+            {editable && (
+              <div className="cfg-section__head cfg-lista-head">
+                <h4 className="cfg-lista-titulo">
+                  Turnos del día{horarios.length > 0 && <span> · {horarios.length}</span>}
+                </h4>
+                <div className="cfg-actions">
+                  <button className="btn btn--add" onClick={sortHorarios}>
+                    Ordenar por hora
+                  </button>
+                  <button className="btn btn--add" onClick={addHorario}>
+                    + Agregar turno
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {editable && (
+              <p className="cfg-hint">
+                Si hace falta, cambiá esta lista a mano: los turnos pueden durar distinto entre sí.
+              </p>
             )}
 
             {editable &&
@@ -462,17 +494,20 @@ export default function ConfigModal({
 
             {/* Horario heredado: se muestra para saber cuál se está usando. */}
             {!editable && (
-              <div className="cfg-franjas-ro">
-                {horarios.length ? (
-                  horarios.map((h) => (
-                    <span className="cfg-franja-ro" key={h.id}>
-                      {horarioLabel(h)}
-                    </span>
-                  ))
-                ) : (
-                  <span className="muted">Sin franjas cargadas.</span>
-                )}
-              </div>
+              <>
+                <h4 className="cfg-lista-titulo">Turnos que usa este día</h4>
+                <div className="cfg-franjas-ro">
+                  {horarios.length ? (
+                    horarios.map((h) => (
+                      <span className="cfg-franja-ro" key={h.id}>
+                        {horarioLabel(h)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="muted">Todavía no hay turnos cargados.</span>
+                  )}
+                </div>
+              </>
             )}
           </section>
 
