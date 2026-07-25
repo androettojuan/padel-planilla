@@ -72,9 +72,11 @@ function useBarraScroll(activa) {
   return { tablero, barra, ancho, sincronizar, visible: ancho.total > ancho.visible + 1 }
 }
 
-export default function CourtsBoard({ config, horarios, planilla, update, loading, sugerencias, onCommitNombre }) {
-  const { canchas } = config
+export default function CourtsBoard({ config, eje, planilla, update, loading, sugerencias, onCommitNombre }) {
   const turnos = planilla.turnos || {}
+  // Las canchas vienen agrupadas por horario: cada grupo es una tabla con su
+  // propia columna de horarios, y las tablas se ponen una al lado de la otra.
+  const { grupos } = eje
   const isMobile = useIsMobile()
   const scroll = useBarraScroll(!isMobile)
 
@@ -102,8 +104,8 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
   const removePlayer = (canchaId, horarioId, index) =>
     mutateSlot(turnoKey(canchaId, horarioId), (lista) => lista.filter((_, i) => i !== index))
 
-  const subtotal = (canchaId) =>
-    horarios.reduce(
+  const subtotal = (canchaId, franjas) =>
+    franjas.reduce(
       (s, h) =>
         s + (turnos[turnoKey(canchaId, h.id)] || []).reduce((a, t) => a + (Number(t.monto) || 0), 0),
       0,
@@ -125,7 +127,8 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
   // desplaza en horizontal en vez de aplastar los campos hasta hacerlos ilegibles.
   // La columna de horarios entra justa con las dos horas apiladas; si se
   // achicara más, su texto se saldría por encima de la primera cancha.
-  const cols = `minmax(72px, max-content) repeat(${canchas.length}, minmax(264px, 1fr))`
+  const colsDe = (grupo) =>
+    `minmax(72px, max-content) repeat(${grupo.canchas.length}, minmax(264px, 1fr))`
 
   return (
     <div className="courts">
@@ -137,20 +140,24 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
       {isMobile ? (
         // Móvil: una cancha debajo de la otra, cada horario a todo el ancho.
         <div className="cmob">
-          {canchas.map((c) => (
-            <section className="cmob__court" key={c.id}>
-              <div className="cgrid__chead cmob__chead">
-                <span>{c.nombre}</span>
-                <span className="cgrid__chead-sub">{formatMoney(subtotal(c.id))}</span>
-              </div>
-              {horarios.map((h) => (
-                <div className="cmob__row" key={h.id}>
-                  <div className="cmob__time">{horarioLabel(h)}</div>
-                  {renderSlot(c, h)}
+          {grupos.flatMap((g) =>
+            g.canchas.map(({ cancha: c, franjas }) => (
+              <section className="cmob__court" key={c.id}>
+                <div className="cgrid__chead cmob__chead">
+                  <span>{c.nombre}</span>
+                  <span className="cgrid__chead-sub">{formatMoney(subtotal(c.id, franjas))}</span>
                 </div>
-              ))}
-            </section>
-          ))}
+                {/* Cada cancha lista solo sus propias franjas, una debajo de la
+                    otra: en el teléfono no hay columnas que alinear. */}
+                {franjas.map((h) => (
+                  <div className="cmob__row" key={h.id}>
+                    <div className="cmob__time">{horarioLabel(h)}</div>
+                    {renderSlot(c, h)}
+                  </div>
+                ))}
+              </section>
+            )),
+          )}
         </div>
       ) : (
         // Escritorio: tabla con horarios alineados y una columna por cancha.
@@ -165,14 +172,24 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
           >
             {/* Mismo ancho exacto que el tablero para que las columnas coincidan. */}
             <div
-              className="cgrid cgrid--heads"
-              style={{ gridTemplateColumns: cols, width: scroll.ancho.total || undefined }}
+              className="courts__tablas"
+              style={{ width: scroll.ancho.total || undefined }}
             >
-              <div className="cgrid__corner" />
-              {canchas.map((c) => (
-                <div className="cgrid__chead" key={c.id}>
-                  <span>{c.nombre}</span>
-                  <span className="cgrid__chead-sub">{formatMoney(subtotal(c.id))}</span>
+              {grupos.map((g) => (
+                <div
+                  className={`cgrid cgrid--heads ${grupos.length > 1 ? 'cgrid--multi' : ''}`}
+                  key={g.key}
+                  style={{ gridTemplateColumns: colsDe(g) }}
+                >
+                  <div className="cgrid__corner" />
+                  {g.canchas.map(({ cancha: c, franjas }) => (
+                    <div className="cgrid__chead" key={c.id}>
+                      <span>{c.nombre}</span>
+                      <span className="cgrid__chead-sub">
+                        {formatMoney(subtotal(c.id, franjas))}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -183,26 +200,37 @@ export default function CourtsBoard({ config, horarios, planilla, update, loadin
             ref={scroll.tablero}
             onScroll={() => scroll.sincronizar('tablero')}
           >
-            <div className="cgrid" style={{ gridTemplateColumns: cols }}>
-              {horarios.map((h) => (
-                <Fragment key={h.id}>
-                  {/* Las dos horas van una debajo de la otra: la columna ocupa
-                      bastante menos y el rango se sigue leyendo igual. */}
-                  <div className="cgrid__time">
-                    {h.desde || h.hasta ? (
-                      <>
-                        <span>{h.desde || '?'}</span>
-                        <span className="cgrid__time-sep">a</span>
-                        <span>{h.hasta || '?'}</span>
-                      </>
-                    ) : (
-                      horarioLabel(h)
-                    )}
-                  </div>
-                  {canchas.map((c) => (
-                    <Fragment key={c.id}>{renderSlot(c, h)}</Fragment>
+            {/* Una tabla por grupo de canchas con el mismo horario, lado a lado. */}
+            <div className="courts__tablas">
+              {grupos.map((g) => (
+                <div
+                  className={`cgrid ${grupos.length > 1 ? 'cgrid--multi' : ''}`}
+                  key={g.key}
+                  style={{ gridTemplateColumns: colsDe(g) }}
+                >
+                  {g.franjas.map((fila, idx) => (
+                    <Fragment key={fila.id}>
+                      {/* Las dos horas van una debajo de la otra: la columna ocupa
+                          bastante menos y el rango se sigue leyendo igual. */}
+                      <div className="cgrid__time">
+                        {fila.desde || fila.hasta ? (
+                          <>
+                            <span>{fila.desde || '?'}</span>
+                            <span className="cgrid__time-sep">a</span>
+                            <span>{fila.hasta || '?'}</span>
+                          </>
+                        ) : (
+                          horarioLabel(fila)
+                        )}
+                      </div>
+                      {/* Misma posición en la lista de cada cancha: mismo horario,
+                          pero con el id de franja que lleva esa cancha. */}
+                      {g.canchas.map(({ cancha: c, franjas }) => (
+                        <Fragment key={c.id}>{renderSlot(c, franjas[idx])}</Fragment>
+                      ))}
+                    </Fragment>
                   ))}
-                </Fragment>
+                </div>
               ))}
             </div>
           </div>

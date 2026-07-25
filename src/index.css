@@ -551,6 +551,17 @@ select {
 .courts__scroll {
   overflow-x: auto;
 }
+/* Las canchas se agrupan por horario: cada grupo es una tabla con su columna de
+   horarios, y las tablas van una al lado de la otra. */
+.courts__tablas {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  min-width: min-content;
+}
+.courts__tablas > .cgrid {
+  flex: 1 1 auto;
+}
 /* Fila de encabezados: queda pegada arriba y lleva la barra de desplazamiento,
    así no hay que bajar al pie de la planilla para correrse de cancha. */
 .courts__heads {
@@ -595,6 +606,12 @@ select {
   z-index: 2;
   background: var(--surface-2);
 }
+/* Con más de un grupo hay varias columnas de horarios: si se pegaran todas al
+   borde izquierdo se superpondrían, así que cada una viaja con su tabla. */
+.cgrid--multi .cgrid__corner,
+.cgrid--multi .cgrid__time {
+  position: static;
+}
 .cgrid__corner {
   /* celda vacía sobre la columna de horarios */
 }
@@ -635,6 +652,12 @@ select {
   font-weight: 600;
   font-size: 10px;
   opacity: 0.55;
+}
+/* Franja en la que esa cancha no abre: se deja el lugar, apenas marcado. */
+.cgrid__hueco {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(148, 163, 184, 0.06);
 }
 .cgrid__cell {
   background: var(--surface);
@@ -1337,6 +1360,101 @@ select {
 .cfg-dow-actions {
   margin-bottom: 10px;
 }
+
+/* Alcance del horario: el del club o el propio de una cancha */
+.cfg-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cfg-scope {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cfg-scope:hover {
+  background: var(--surface-2);
+}
+.cfg-scope.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+/* Punto indicador cuando esa cancha tiene horario propio */
+.cfg-scope.has-override::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.cfg-scope.has-override.is-active::after {
+  background: #bbf7d0;
+}
+
+/* Regla que genera las franjas: abre, cierra y duración del turno */
+.cfg-regla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.cfg-regla__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cfg-regla__campo .cfg-input {
+  flex: none;
+  width: 92px;
+}
+.cfg-input--dur {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  background: var(--surface);
+}
+.cfg-regla__btn {
+  margin-left: auto;
+}
+.cfg-regla__aviso {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #b45309;
+}
+
+/* Franjas que la cancha hereda del club: solo para mirar */
+.cfg-franjas-ro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cfg-franja-ro {
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
 .cfg-row {
   display: flex;
   align-items: center;

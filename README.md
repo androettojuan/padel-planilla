@@ -11,6 +11,12 @@ propios datos.
 
 - **Grilla de turnos** por cancha y franja horaria. En cada turno se anota el
   jugador, el monto y el tipo de pago (Contado / Mercado Pago / Anotado).
+- **Horarios**: se cargan diciendo a qué hora abre y cierra el club y cuánto
+  dura el turno, y la app genera las franjas (después se pueden retocar a mano).
+  Cada cancha puede tener su propio horario, y cualquiera de los dos —club o
+  cancha— puede tener uno distinto para un día de la semana. En la planilla las
+  canchas se agrupan por horario: las que coinciden comparten una columna de
+  horarios, y cada grupo distinto arma su propia tabla al lado.
 - **Panel de consumos** con selector de productos del club (cerveza, agua, etc.),
   cantidad y tipo de pago. En clubes de 3 canchas o más, Cuentas y Consumos
   dejan la columna del costado y se abren desde la solapa del borde derecho,

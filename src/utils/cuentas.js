@@ -1,4 +1,4 @@
-import { turnoKey, horarioLabel } from '../data/defaults'
+import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
 
 // Nombre que agrupa las líneas sin jugador asignado.
 export const SIN_ASIGNAR = ''
@@ -21,9 +21,11 @@ const sumConsumos = (arr) =>
  */
 export function buildCuentas(planilla, config) {
   const canchas = config?.canchas || []
-  const horarios = config?.horarios || []
   const canchaNombre = (id) => canchas.find((c) => c.id === id)?.nombre || id
-  const horarioDe = (id) => horarioLabel(horarios.find((h) => h.id === id))
+  // La franja se busca primero en la cancha del turno, que puede tener horario
+  // propio, y si no aparece ahí se cae a las listas del club.
+  const horarioDe = (canchaId, horarioId) =>
+    horarioLabel(buscarFranja(config, canchaId, horarioId))
 
   const groups = new Map()
   const getGroup = (nombre) => {
@@ -39,7 +41,7 @@ export function buildCuentas(planilla, config) {
         canchaId,
         horarioId,
         canchaNombre: canchaNombre(canchaId),
-        horario: horarioDe(horarioId),
+        horario: horarioDe(canchaId, horarioId),
       })
     }
   }

@@ -7,7 +7,7 @@ import { useConfig } from './hooks/useConfig'
 import { useJugadores } from './hooks/useJugadores'
 import { usePlanilla } from './hooks/usePlanilla'
 import { todayKey } from './utils/helpers'
-import { horariosForDate } from './data/defaults'
+import { ejeHorarios } from './data/defaults'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -66,7 +66,8 @@ export default function App() {
   const { planilla, update, loading, error } = usePlanilla(clubId, dateKey)
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
-  const horarios = useMemo(() => horariosForDate(config, dateKey), [config, dateKey])
+  // Filas del tablero: la unión de las franjas de todas las canchas de ese día.
+  const eje = useMemo(() => ejeHorarios(config, dateKey), [config, dateKey])
   // Sugerencias para autocompletar: directorio (activos) + nombres ya usados hoy.
   const sugerencias = useMemo(() => computeSugerencias(jugadores, planilla), [jugadores, planilla])
 
@@ -183,7 +184,7 @@ export default function App() {
           <section className="layout__courts">
             <CourtsBoard
               config={config}
-              horarios={horarios}
+              eje={eje}
               planilla={planilla}
               update={update}
               loading={loading}
