@@ -11,6 +11,8 @@
 // puede quedar negativo (se cobró más fiado viejo del que se anotó nuevo); por
 // eso se devuelve `fiadoCobrado` para poder explicarlo en la UI.
 
+import { conceptoConsumo } from './consumos'
+
 const PAGO_IDS = ['contado', 'mercado', 'anotado']
 
 export function resumenMensual(planillas, fiadoPagos = []) {
@@ -52,7 +54,7 @@ export function resumenMensual(planillas, fiadoPagos = []) {
     }
     for (const c of data?.consumos || []) {
       const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)
-      registrar(dateKey, sub, c.pagado, c.pago, c.jugador, c.nombre)
+      registrar(dateKey, sub, c.pagado, c.pago, c.jugador, conceptoConsumo(c))
     }
     for (const tab of data?.mostrador || []) {
       for (const it of tab.items || []) {

@@ -1,4 +1,5 @@
 import { normalizeNombre } from './helpers'
+import { conceptoConsumo } from './consumos'
 
 // Recorre todas las planillas y junta las líneas cobradas como "Anotado" (es
 // decir, fiadas): turnos, consumos y consumos de mostrador. Devuelve un cargo
@@ -17,7 +18,7 @@ export function cargosFiado(planillas) {
     }
     for (const c of data?.consumos || []) {
       const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)
-      push(dateKey, sub, c.pagado, c.pago, c.jugador, c.nombre)
+      push(dateKey, sub, c.pagado, c.pago, c.jugador, conceptoConsumo(c))
     }
     for (const tab of data?.mostrador || []) {
       for (const it of tab.items || []) {
