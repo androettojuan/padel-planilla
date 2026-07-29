@@ -1744,12 +1744,17 @@ select {
 }
 .stock-compra {
   display: grid;
-  grid-template-columns: 64px minmax(80px, 1fr) 48px 100px 100px;
-  gap: 8px;
+  grid-template-columns: 58px minmax(70px, 1fr) 40px 88px 88px 30px 30px;
+  gap: 6px;
   align-items: center;
   padding: 6px 4px;
   border-top: 1px solid var(--border);
   font-size: 13px;
+}
+/* La confirmación de deshacer ocupa el lugar de los dos botones de la fila. */
+.stock-compra .confirm-inline {
+  grid-column: span 2;
+  justify-content: flex-end;
 }
 .stock-compra__nombre {
   font-weight: 600;

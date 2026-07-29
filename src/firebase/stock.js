@@ -1,9 +1,12 @@
 import {
   setDoc,
+  deleteDoc,
   onSnapshot,
   getDocs,
+  getDoc,
   increment,
   query,
+  where,
   orderBy,
   limit as fbLimit,
 } from 'firebase/firestore'
@@ -151,6 +154,107 @@ export async function moverStock(clubId, deltas, controlados) {
       ),
     ),
   )
+}
+
+/**
+ * El costo del producto es el de su última compra. Después de corregir o deshacer
+ * una compra hay que volver a mirar cuál quedó siendo la última: si se editó el
+ * costo de la más nueva, ese es el nuevo; si se deshizo, vuelve el de la anterior;
+ * y si no queda ninguna, queda en 0.
+ *
+ * Se filtra solo por producto y se ordena en memoria: son pocas compras por
+ * producto y así no hace falta un índice compuesto.
+ */
+async function recalcularCosto(clubId, productoId) {
+  if (!isFirebaseConfigured) {
+    const compras = readLocal(clubId, 'stockCompras', []).filter((c) => c.productoId === productoId)
+    const ultima = compras.sort((a, b) => (b.ts || 0) - (a.ts || 0))[0]
+    const stock = readLocal(clubId, 'stock', {})
+    if (stock[productoId]) {
+      stock[productoId] = { ...stock[productoId], costo: ultima ? Number(ultima.costo) || 0 : 0 }
+      writeLocal(clubId, 'stock', stock)
+    }
+    return
+  }
+  const snap = await getDocs(query(clubCol(clubId, 'stockCompras'), where('productoId', '==', productoId)))
+  const compras = snap.docs.map((d) => d.data()).sort((a, b) => (b.ts || 0) - (a.ts || 0))
+  const costo = compras.length ? Number(compras[0].costo) || 0 : 0
+  await setDoc(clubDoc(clubId, 'stock', productoId), { costo }, { merge: true })
+}
+
+// Suma `delta` a las unidades sin dejar el stock en negativo. Se usa al corregir
+// una compra ya cargada, donde parte de la mercadería puede estar vendida.
+async function moverSinNegativos(clubId, productoId, delta) {
+  if (!delta) return
+  if (!isFirebaseConfigured) {
+    const stock = readLocal(clubId, 'stock', {})
+    const actual = stock[productoId]
+    if (!actual) return
+    stock[productoId] = {
+      ...actual,
+      cantidad: Math.max(0, (Number(actual.cantidad) || 0) + delta),
+    }
+    writeLocal(clubId, 'stock', stock)
+    return
+  }
+  const ref = clubDoc(clubId, 'stock', productoId)
+  if (delta > 0) {
+    await setDoc(ref, { cantidad: increment(delta), actualizado: Date.now() }, { merge: true })
+    return
+  }
+  const snap = await getDoc(ref)
+  const actual = Number(snap.data()?.cantidad) || 0
+  await setDoc(
+    ref,
+    { cantidad: Math.max(0, actual + delta), actualizado: Date.now() },
+    { merge: true },
+  )
+}
+
+/**
+ * Corrige una compra ya cargada: ajusta el stock por la diferencia de unidades y
+ * deja el costo nuevo. Si la mercadería que se saca ya se vendió, el stock se
+ * queda en 0 en vez de irse a negativo.
+ */
+export async function editarCompra(clubId, compra, { cantidad, costo }) {
+  const unidades = Math.max(0, Math.round(Number(cantidad) || 0))
+  const costoUnit = Math.max(0, Math.round(Number(costo) || 0))
+  if (!compra?.id || !compra.productoId || unidades <= 0) return
+  const delta = unidades - (Number(compra.cantidad) || 0)
+
+  if (!isFirebaseConfigured) {
+    const compras = readLocal(clubId, 'stockCompras', []).map((c) =>
+      c.id === compra.id ? { ...c, cantidad: unidades, costo: costoUnit } : c,
+    )
+    writeLocal(clubId, 'stockCompras', compras)
+  } else {
+    await setDoc(
+      clubDoc(clubId, 'stockCompras', compra.id),
+      { cantidad: unidades, costo: costoUnit },
+      { merge: true },
+    )
+  }
+  await moverSinNegativos(clubId, compra.productoId, delta)
+  await recalcularCosto(clubId, compra.productoId)
+}
+
+/**
+ * Deshace una compra cargada por error: saca del stock las unidades que había
+ * sumado, borra el movimiento y devuelve el costo al de la compra anterior.
+ */
+export async function deshacerCompra(clubId, compra) {
+  if (!compra?.id || !compra.productoId) return
+  if (!isFirebaseConfigured) {
+    writeLocal(
+      clubId,
+      'stockCompras',
+      readLocal(clubId, 'stockCompras', []).filter((c) => c.id !== compra.id),
+    )
+  } else {
+    await deleteDoc(clubDoc(clubId, 'stockCompras', compra.id))
+  }
+  await moverSinNegativos(clubId, compra.productoId, -(Number(compra.cantidad) || 0))
+  await recalcularCosto(clubId, compra.productoId)
 }
 
 // Últimas compras cargadas, de la más nueva a la más vieja.

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   subscribeStock,
   registrarCompra,
+  editarCompra,
+  deshacerCompra,
   ajustarStock,
   guardarMinimo,
   moverStock,
@@ -47,11 +49,13 @@ export function useStock(clubId) {
   )
 
   const comprar = useCallback((compra) => registrarCompra(clubId, compra), [clubId])
+  const editar = useCallback((compra, cambios) => editarCompra(clubId, compra, cambios), [clubId])
+  const deshacer = useCallback((compra) => deshacerCompra(clubId, compra), [clubId])
   const ajustar = useCallback((productoId, cantidad) => ajustarStock(clubId, productoId, cantidad), [clubId])
   const setMinimo = useCallback(
     (productoId, minimo) => guardarMinimo(clubId, productoId, minimo),
     [clubId],
   )
 
-  return { stock, loading, error, descontar, comprar, ajustar, setMinimo }
+  return { stock, loading, error, descontar, comprar, editar, deshacer, ajustar, setMinimo }
 }

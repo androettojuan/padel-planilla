@@ -3,6 +3,7 @@ import { formatMoney, formatDateNumeric, todayKey } from '../utils/helpers'
 import { cantidadDe, costoDe, faltaReponer, valorStock } from '../utils/stock'
 import { loadCompras } from '../firebase/stock'
 import { useClubId } from '../hooks/useClub'
+import BotonBorrar from './BotonBorrar'
 
 /**
  * Pantalla de stock: cuánto queda de cada producto, a qué costo entró y cuánta
@@ -12,11 +13,21 @@ import { useClubId } from '../hooks/useClub'
  *
  * Los productos son los del club (Configuración); acá solo se maneja su stock.
  */
-export default function StockModal({ config, stock, onComprar, onAjustar, onMinimo, onClose }) {
+export default function StockModal({
+  config,
+  stock,
+  onComprar,
+  onEditarCompra,
+  onDeshacerCompra,
+  onAjustar,
+  onMinimo,
+  onClose,
+}) {
   const clubId = useClubId()
   const productos = config.productos || []
   const [compras, setCompras] = useState([])
   const [comprando, setComprando] = useState(null) // productoId con el form abierto
+  const [editando, setEditando] = useState(null) // id de la compra que se corrige
   const [error, setError] = useState(null)
 
   const recargarCompras = () => {
@@ -40,6 +51,27 @@ export default function StockModal({ config, stock, onComprar, onAjustar, onMini
         fecha: todayKey(),
       })
       setComprando(null)
+      recargarCompras()
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  const editar = async (compra, cantidad, costo) => {
+    setError(null)
+    try {
+      await onEditarCompra(compra, { cantidad, costo })
+      setEditando(null)
+      recargarCompras()
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  const deshacer = async (compra) => {
+    setError(null)
+    try {
+      await onDeshacerCompra(compra)
       recargarCompras()
     } catch (err) {
       setError(err)
@@ -155,18 +187,46 @@ export default function StockModal({ config, stock, onComprar, onAjustar, onMini
               <div className="cfg-section__head">
                 <h3 className="cfg-section__title">Últimas compras</h3>
               </div>
+              <p className="cfg-hint">
+                Si cargaste algo mal, se corrige o se deshace desde acá: el stock se
+                ajusta por la diferencia y el costo del producto vuelve a ser el de la
+                última compra que quede.
+              </p>
               <ul className="stock-compras">
-                {compras.map((c) => (
-                  <li className="stock-compra" key={c.id}>
-                    <span className="muted">{c.fecha ? formatDateNumeric(c.fecha) : ''}</span>
-                    <span className="stock-compra__nombre">{c.nombre}</span>
-                    <span className="stock-row__num">+{c.cantidad}</span>
-                    <span className="stock-row__num">{formatMoney(c.costo)} c/u</span>
-                    <span className="stock-row__num">
-                      {formatMoney((Number(c.cantidad) || 0) * (Number(c.costo) || 0))}
-                    </span>
-                  </li>
-                ))}
+                {compras.map((c) =>
+                  editando === c.id ? (
+                    <li key={c.id}>
+                      <EditarCompraForm
+                        compra={c}
+                        onCancel={() => setEditando(null)}
+                        onConfirm={(cantidad, costo) => editar(c, cantidad, costo)}
+                      />
+                    </li>
+                  ) : (
+                    <li className="stock-compra" key={c.id}>
+                      <span className="muted">{c.fecha ? formatDateNumeric(c.fecha) : ''}</span>
+                      <span className="stock-compra__nombre">{c.nombre}</span>
+                      <span className="stock-row__num">+{c.cantidad}</span>
+                      <span className="stock-row__num">{formatMoney(c.costo)} c/u</span>
+                      <span className="stock-row__num">
+                        {formatMoney((Number(c.cantidad) || 0) * (Number(c.costo) || 0))}
+                      </span>
+                      <button
+                        className="stock-row__compra"
+                        onClick={() => setEditando(c.id)}
+                        title={`Corregir la compra de ${c.nombre}`}
+                        aria-label="Corregir compra"
+                      >
+                        ✎
+                      </button>
+                      <BotonBorrar
+                        onConfirm={() => deshacer(c)}
+                        label="Deshacer compra"
+                        title="Deshacer la compra: saca del stock lo que había sumado"
+                      />
+                    </li>
+                  ),
+                )}
               </ul>
             </section>
           )}
@@ -177,6 +237,69 @@ export default function StockModal({ config, stock, onComprar, onAjustar, onMini
             Cerrar
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Corrección de una compra ya cargada. Muestra qué va a pasar con el stock, que
+ * es lo que importa: cambiar 24 por 12 le saca 12 unidades a lo que hay hoy.
+ */
+function EditarCompraForm({ compra, onCancel, onConfirm }) {
+  const [cantidad, setCantidad] = useState(String(compra.cantidad ?? ''))
+  const [costo, setCosto] = useState(String(compra.costo ?? ''))
+
+  const unidades = Number(cantidad) || 0
+  const costoUnit = Number(costo) || 0
+  const delta = unidades - (Number(compra.cantidad) || 0)
+
+  return (
+    <div className="stock-compra-form">
+      <p className="dividir__head">
+        Corregir la compra de {compra.nombre}
+        {compra.fecha ? ` del ${formatDateNumeric(compra.fecha)}` : ''}
+      </p>
+      <div className="stock-compra-form__campos">
+        <label className="stock-label">
+          Cantidad
+          <input
+            className="cfg-input cfg-input--price"
+            inputMode="numeric"
+            autoFocus
+            value={cantidad}
+            onChange={(e) => setCantidad(e.target.value.replace(/[^\d]/g, ''))}
+          />
+        </label>
+        <label className="stock-label">
+          Costo c/u
+          <input
+            className="cfg-input cfg-input--price"
+            inputMode="numeric"
+            value={costo}
+            onChange={(e) => setCosto(e.target.value.replace(/[^\d]/g, ''))}
+          />
+        </label>
+        <span className="stock-compra-form__total">{formatMoney(unidades * costoUnit)}</span>
+      </div>
+      <p className="cfg-hint">
+        {delta === 0
+          ? 'Las unidades quedan como están.'
+          : delta > 0
+            ? `Se suman ${delta} unidades al stock.`
+            : `Se sacan ${Math.abs(delta)} unidades del stock.`}
+      </p>
+      <div className="dividir__acciones">
+        <button
+          className="btn btn--primary"
+          disabled={unidades <= 0}
+          onClick={() => onConfirm(unidades, costoUnit)}
+        >
+          Guardar
+        </button>
+        <button className="btn btn--ghost-sm" onClick={onCancel}>
+          Cancelar
+        </button>
       </div>
     </div>
   )
