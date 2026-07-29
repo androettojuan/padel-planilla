@@ -1744,17 +1744,18 @@ select {
 }
 .stock-compra {
   display: grid;
-  grid-template-columns: 58px minmax(70px, 1fr) 40px 88px 88px 30px 30px;
+  /* La última columna deja lugar para los dos botones de la confirmación de
+     deshacer, así la fila no se desarma cuando aparece. */
+  grid-template-columns: 58px minmax(70px, 1fr) 40px 88px 88px 30px 56px;
   gap: 6px;
   align-items: center;
   padding: 6px 4px;
   border-top: 1px solid var(--border);
   font-size: 13px;
 }
-/* La confirmación de deshacer ocupa el lugar de los dos botones de la fila. */
-.stock-compra .confirm-inline {
-  grid-column: span 2;
-  justify-content: flex-end;
+.stock-compra .confirm-inline,
+.stock-compra > button[aria-label='Deshacer compra'] {
+  justify-self: end;
 }
 .stock-compra__nombre {
   font-weight: 600;
