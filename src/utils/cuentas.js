@@ -1,8 +1,11 @@
 import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
+import { MOSTRADOR_LABEL } from './consumos'
 
 // Nombre que agrupa las líneas sin jugador asignado.
 export const SIN_ASIGNAR = ''
 export const SIN_ASIGNAR_LABEL = 'Sin asignar'
+// Consumo de alguien que no estaba jugando (una venta suelta del bar).
+export { MOSTRADOR_LABEL }
 
 const nombreDe = (item) => (item?.jugador || '').trim()
 
@@ -18,6 +21,10 @@ const sumConsumos = (arr) =>
  *
  * Así, agregar un consumo nuevo a un jugador ya cobrado genera una cuenta
  * pendiente nueva por ese consumo, sin tocar lo ya pagado.
+ *
+ * Los consumos de mostrador (gente que no jugaba) no se agrupan: cada venta es
+ * su propia cuenta, porque cada persona de afuera paga lo suyo y se va. Por eso
+ * cada cuenta lleva `key`, que es con lo que se la identifica para cobrarla.
  */
 export function buildCuentas(planilla, config) {
   const canchas = config?.canchas || []
@@ -28,15 +35,20 @@ export function buildCuentas(planilla, config) {
     horarioLabel(buscarFranja(config, canchaId, horarioId))
 
   const groups = new Map()
-  const getGroup = (nombre) => {
-    if (!groups.has(nombre)) groups.set(nombre, { nombre, turnos: [], consumos: [] })
-    return groups.get(nombre)
+  const getGroup = (key, extra = {}) => {
+    if (!groups.has(key)) groups.set(key, { key, turnos: [], consumos: [], ...extra })
+    return groups.get(key)
   }
+  // Un consumo de mostrador va en su propia cuenta; el resto se junta por jugador.
+  const grupoDeConsumo = (c) =>
+    c.mostrador
+      ? getGroup(`mostrador#${c.id}`, { nombre: MOSTRADOR_LABEL, mostrador: true })
+      : getGroup(nombreDe(c), { nombre: nombreDe(c) })
 
   for (const [key, lista] of Object.entries(planilla?.turnos || {})) {
     const [canchaId, horarioId] = key.split('__')
     for (const item of lista) {
-      getGroup(nombreDe(item)).turnos.push({
+      getGroup(nombreDe(item), { nombre: nombreDe(item) }).turnos.push({
         ...item,
         canchaId,
         horarioId,
@@ -46,7 +58,7 @@ export function buildCuentas(planilla, config) {
     }
   }
   for (const c of planilla?.consumos || []) {
-    getGroup(nombreDe(c)).consumos.push(c)
+    grupoDeConsumo(c).consumos.push(c)
   }
 
   const cuentas = []
@@ -58,7 +70,9 @@ export function buildCuentas(planilla, config) {
     const totalConsumos = sumConsumos(consumosPend)
     if (totalTurnos + totalConsumos > 0 || consumosPend.length > 0) {
       cuentas.push({
+        key: g.key,
         nombre: g.nombre,
+        mostrador: !!g.mostrador,
         turnos: turnosPend,
         consumos: consumosPend,
         totalTurnos,
@@ -82,7 +96,9 @@ export function buildCuentas(planilla, config) {
       const tt = sumTurnos(grp.turnos)
       const tc = sumConsumos(grp.consumos)
       cuentas.push({
+        key: g.key,
         nombre: g.nombre,
+        mostrador: !!g.mostrador,
         turnos: grp.turnos,
         consumos: grp.consumos,
         totalTurnos: tt,
@@ -101,12 +117,20 @@ export function buildCuentas(planilla, config) {
   })
 }
 
-// Cobra o revierte el pago del jugador, sin tocar otros cobros suyos.
+// Cobra o revierte el pago de una cuenta, sin tocar otros cobros suyos.
 // Al cobrar (pagado=true) marca solo las líneas todavía pendientes con `medio`.
 // Al revertir (pagado=false) afecta solo las líneas cobradas con ese `medio`.
-export function aplicarPago(planilla, nombre, medio, pagado) {
-  const objetivo = (nombre || '').trim()
-  const pertenece = (item) => (item?.jugador || '').trim() === objetivo
+//
+// `cuenta` es una de las que devuelve buildCuentas: la de un jugador afecta sus
+// líneas por nombre, y la de mostrador solo la venta suelta que la originó.
+export function aplicarPago(planilla, cuenta, medio, pagado) {
+  const objetivo = (cuenta?.nombre || '').trim()
+  const idsMostrador = new Set((cuenta?.consumos || []).map((c) => c.id))
+  const pertenece = cuenta?.mostrador
+    ? (item) => item?.mostrador && idsMostrador.has(item.id)
+    : // Sin esto, la cuenta "Sin asignar" (jugador vacío) se llevaría también
+      // las ventas de mostrador, que no tienen nombre a propósito.
+      (item) => !item?.mostrador && (item?.jugador || '').trim() === objetivo
   const afecta = pagado
     ? (item) => pertenece(item) && !item.pagado
     : (item) => pertenece(item) && item.pagado && item.pago === medio

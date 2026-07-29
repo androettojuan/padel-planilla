@@ -4,6 +4,7 @@ import { formatMoney } from '../utils/helpers'
 import {
   grupoDe,
   jugadoresDe,
+  lineaMostrador,
   lineasConsumo,
   nombresUnicos,
   precioOriginal,
@@ -45,11 +46,14 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
 
   const addConsumo = () => {
     if (!producto) return
-    const nuevas = lineasConsumo(
-      { productoId: producto.id, nombre: producto.nombre, precio: producto.precio },
-      nombresACargar,
-    )
-    if (!nuevas.length) return // un consumo siempre va asociado a un jugador
+    const base = { productoId: producto.id, nombre: producto.nombre, precio: producto.precio }
+    // Sin ningún jugador el consumo se carga como venta de mostrador: alguien que
+    // no estaba jugando y se llevó algo. Queda marcado para no confundirlo con un
+    // consumo al que se olvidaron de ponerle el nombre.
+    const nuevas = nombresACargar.length
+      ? lineasConsumo(base, nombresACargar)
+      : [{ ...lineaMostrador(base) }]
+    if (!nuevas.length) return
     update((prev) => ({ ...prev, consumos: [...(prev.consumos || []), ...nuevas] }))
     setJugador('')
     setReparto([])
@@ -129,13 +133,18 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
               .join(' · ')}
           </p>
         )}
-        <button
-          className="btn btn--primary"
-          onClick={addConsumo}
-          disabled={nombresACargar.length === 0}
-        >
-          {nombresACargar.length > 1 ? `Agregar y dividir entre ${nombresACargar.length}` : 'Agregar'}
+        <button className="btn btn--primary" onClick={addConsumo}>
+          {nombresACargar.length === 0
+            ? 'Agregar al mostrador'
+            : nombresACargar.length > 1
+              ? `Agregar y dividir entre ${nombresACargar.length}`
+              : 'Agregar'}
         </button>
+        {nombresACargar.length === 0 && (
+          <p className="reparto__hint muted">
+            Sin jugador se anota como venta de mostrador: alguien que no estaba jugando.
+          </p>
+        )}
       </div>
 
       {consumos.length === 0 ? (
@@ -162,7 +171,13 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
                     </span>
                   )}
                 </span>
-                {c.jugador && <span className="consumo__player">{c.jugador}</span>}
+                {c.mostrador ? (
+                  <span className="consumo__player consumo__player--mostrador">
+                    Mostrador · no jugaba
+                  </span>
+                ) : (
+                  c.jugador && <span className="consumo__player">{c.jugador}</span>
+                )}
               </div>
               <div className="consumo__qty">
                 <button
@@ -194,8 +209,10 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
                 </span>
               ) : (
                 <>
+                  {/* Una venta de mostrador no se divide: no hay jugadores. */}
                   <button
                     className="consumo__split"
+                    hidden={c.mostrador}
                     disabled={cobrado}
                     onClick={() => setDividiendo(dividiendo === c.id ? null : c.id)}
                     title={

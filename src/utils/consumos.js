@@ -1,5 +1,8 @@
 import { normalizeNombre, uid } from './helpers'
 
+// Con quién se anota una venta a alguien que no estaba jugando.
+export const MOSTRADOR_LABEL = 'Mostrador'
+
 // Un consumo dividido entre varios jugadores no es una línea especial: son
 // varias líneas normales, una por jugador, con su parte del precio. Así cada
 // jugador lo ve en su propia cuenta, lo paga con el medio que quiera y suma
@@ -68,6 +71,24 @@ export function lineasConsumo({ productoId, nombre, precio }, nombres, cantidad 
   }))
 }
 
+/**
+ * Consumo de alguien que no estaba jugando: una venta suelta del mostrador. Va
+ * sin jugador a propósito y marcado con `mostrador`, para distinguirlo de un
+ * consumo al que le falta el nombre. Cada uno se cobra por separado.
+ */
+export function lineaMostrador({ productoId, nombre, precio }, cantidad = 1) {
+  return {
+    id: uid(),
+    jugador: '',
+    mostrador: true,
+    productoId,
+    nombre,
+    precio: Math.round(Number(precio) || 0),
+    cantidad: Math.max(1, Number(cantidad) || 1),
+    pagado: false,
+  }
+}
+
 // Las líneas que comparten la división de un mismo producto. Una línea sin
 // dividir es un grupo de uno.
 export function grupoDe(consumos = [], consumo) {
@@ -87,6 +108,11 @@ export function jugadoresDe(consumos = [], consumo) {
 // Precio unitario del producto entero: la suma de las partes del grupo.
 export function precioOriginal(consumos = [], consumo) {
   return grupoDe(consumos, consumo).reduce((s, c) => s + (Number(c.precio) || 0), 0)
+}
+
+// Nombre que lleva el consumo en el resumen del mes y en el detalle de fiado.
+export function nombreConsumo(consumo) {
+  return consumo?.mostrador ? MOSTRADOR_LABEL : consumo?.jugador
 }
 
 // Etiqueta del consumo con la parte, para el detalle de fiado y el resumen:
