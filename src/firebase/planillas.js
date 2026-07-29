@@ -104,11 +104,14 @@ function readLocalPlanillas(clubId, desde = '') {
 export async function loadMonth(clubId, monthKey) {
   if (!isFirebaseConfigured) return readLocalPlanillas(clubId, monthKey)
   // Los doc id son "YYYY-MM-DD"; filtramos por rango sobre el id del documento.
+  // El cierre usa el escape \uf8ff, más alto que cualquier dígito: cerrar en
+  // "2026-07-" a secas daba un rango invertido —como texto es MENOR que
+  // "2026-07-01"— y el mes salía siempre vacío.
   const q = query(
     clubCol(clubId, 'planillas'),
     orderBy(documentId()),
     startAt(`${monthKey}-01`),
-    endAt(`${monthKey}-`),
+    endAt(`${monthKey}-\uf8ff`),
   )
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ dateKey: d.id, data: d.data() }))
