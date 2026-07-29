@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { uid, normalizeTime, normalizeNombre } from '../utils/helpers'
 import { generarFranjas, reglaDeFranjas, horarioLabel } from '../data/defaults'
+import BotonBorrar from './BotonBorrar'
 
 // Duraciones ofrecidas al generar las franjas. Cualquier otra combinación se
 // arma editando las franjas a mano.
@@ -273,9 +274,7 @@ export default function ConfigModal({
                   placeholder="Nombre de la cancha"
                   onChange={(e) => updateCancha(c.id, e.target.value)}
                 />
-                <button className="player__del" onClick={() => removeCancha(c.id)} aria-label="Quitar">
-                  ×
-                </button>
+                <BotonBorrar onConfirm={() => removeCancha(c.id)} title="Quitar cancha" />
               </div>
             ))}
           </section>
@@ -486,9 +485,7 @@ export default function ConfigModal({
                     ↓
                   </button>
                 </div>
-                <button className="player__del" onClick={() => removeHorario(h.id)} aria-label="Quitar">
-                  ×
-                </button>
+                <BotonBorrar onConfirm={() => removeHorario(h.id)} title="Quitar turno" />
               </div>
             ))}
 
@@ -534,9 +531,7 @@ export default function ConfigModal({
                   value={p.precio}
                   onChange={(e) => updateProducto(p.id, { precio: e.target.value.replace(/[^\d]/g, '') })}
                 />
-                <button className="player__del" onClick={() => removeProducto(p.id)} aria-label="Quitar">
-                  ×
-                </button>
+                <BotonBorrar onConfirm={() => removeProducto(p.id)} title="Quitar producto" />
               </div>
             ))}
           </section>
@@ -641,9 +636,7 @@ function JugadoresSection({ jugadores, onSave, onDelete }) {
             >
               {j.activo === false ? 'Inactivo' : 'Activo'}
             </button>
-            <button className="player__del" onClick={() => remove(j.id)} aria-label="Quitar">
-              ×
-            </button>
+            <BotonBorrar onConfirm={() => remove(j.id)} title="Borrar del directorio" />
           </div>
         ))
       )}

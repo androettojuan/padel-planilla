@@ -8,6 +8,7 @@ import {
   quitarMiembro,
 } from '../firebase/clubs'
 import { slugify } from '../utils/helpers'
+import BotonBorrar from './BotonBorrar'
 
 // Panel del super admin: crear clubes y decidir quién entra a cada uno.
 // El alta de un usuario es simplemente sumar su email al club; la primera vez
@@ -235,14 +236,11 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
               {miembros.map((m) => (
                 <div className="cfg-row admin-row" key={m.id || m.email}>
                   <span className="admin-club__nombre">{m.email}</span>
-                  <button
-                    className="player__del"
-                    onClick={() => handleQuitar(m.email)}
-                    aria-label={`Quitar ${m.email}`}
+                  <BotonBorrar
+                    onConfirm={() => handleQuitar(m.email)}
+                    label={`Quitar ${m.email}`}
                     title="Quitar del club"
-                  >
-                    ×
-                  </button>
+                  />
                 </div>
               ))}
             </section>
