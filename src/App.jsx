@@ -6,8 +6,10 @@ import { ClubProvider } from './hooks/useClub'
 import { useConfig } from './hooks/useConfig'
 import { useJugadores } from './hooks/useJugadores'
 import { usePlanilla } from './hooks/usePlanilla'
+import { useStock } from './hooks/useStock'
 import { todayKey } from './utils/helpers'
 import { ejeHorarios } from './data/defaults'
+import { faltaReponer } from './utils/stock'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -16,6 +18,7 @@ import CuentasPanel from './components/CuentasPanel'
 import PanelesDrawer, { SolapaPaneles } from './components/PanelesDrawer'
 import ConfigModal from './components/ConfigModal'
 import ResumenMensualModal from './components/ResumenMensualModal'
+import StockModal from './components/StockModal'
 import SaldosModal from './components/SaldosModal'
 import AdminClubesModal from './components/AdminClubesModal'
 import LoginScreen from './components/LoginScreen'
@@ -42,6 +45,7 @@ export default function App() {
   const [configOpen, setConfigOpen] = useState(false)
   const [resumenOpen, setResumenOpen] = useState(false)
   const [saldosOpen, setSaldosOpen] = useState(false)
+  const [stockOpen, setStockOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
 
   const sesion = useSesion()
@@ -64,6 +68,7 @@ export default function App() {
   const { config, saveConfig } = useConfig(clubId)
   const { jugadores, saveJugador, deleteJugador, upsertNombre } = useJugadores(clubId)
   const { planilla, update, loading, error } = usePlanilla(clubId, dateKey)
+  const { stock, descontar, comprar, ajustar, setMinimo } = useStock(clubId)
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
   // Filas del tablero: la unión de las franjas de todas las canchas de ese día.
@@ -96,9 +101,14 @@ export default function App() {
         update={update}
         sugerencias={sugerencias}
         onCommitNombre={upsertNombre}
+        stock={stock}
+        onStock={descontar}
       />
     ),
   }
+
+  // Con un solo producto para reponer ya se avisa en el botón de Stock.
+  const stockBajo = (config.productos || []).some((p) => faltaReponer(stock, p.id))
 
   // Antes de autorizar: pantalla de carga / login / sin club asignado.
   if (authLoading) {
@@ -178,6 +188,8 @@ export default function App() {
           totals={totals}
           onOpenResumen={() => setResumenOpen(true)}
           onOpenSaldos={() => setSaldosOpen(true)}
+          onOpenStock={() => setStockOpen(true)}
+          stockBajo={stockBajo}
         />
 
         <main className={`layout ${anchoCompleto ? 'layout--ancho' : ''}`}>
@@ -223,6 +235,17 @@ export default function App() {
 
         {resumenOpen && (
           <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
+        )}
+
+        {stockOpen && (
+          <StockModal
+            config={config}
+            stock={stock}
+            onComprar={comprar}
+            onAjustar={ajustar}
+            onMinimo={setMinimo}
+            onClose={() => setStockOpen(false)}
+          />
         )}
 
         {saldosOpen && (

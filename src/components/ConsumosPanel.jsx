@@ -12,10 +12,19 @@ import {
   repartirMonto,
   setCantidadConsumo,
 } from '../utils/consumos'
+import { cantidadDe, costoDe, unidadesPorProducto } from '../utils/stock'
 import BotonBorrar from './BotonBorrar'
 import NombreInput from './NombreInput'
 
-export default function ConsumosPanel({ config, planilla, update, sugerencias, onCommitNombre }) {
+export default function ConsumosPanel({
+  config,
+  planilla,
+  update,
+  sugerencias,
+  onCommitNombre,
+  stock = {},
+  onStock,
+}) {
   const productos = config.productos || []
   // Solo se listan los consumos sin cobrar; al cerrar la cuenta del jugador
   // quedan pagados y salen de esta vista (siguen sumando en los totales del día).
@@ -44,9 +53,19 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
     setJugador('')
   }
 
+  // Mueve el stock si el producto está bajo control. Negativo al vender.
+  const moverStock = (deltas) => onStock && onStock(deltas)
+
   const addConsumo = () => {
     if (!producto) return
-    const base = { productoId: producto.id, nombre: producto.nombre, precio: producto.precio }
+    const base = {
+      productoId: producto.id,
+      nombre: producto.nombre,
+      precio: producto.precio,
+      // Costo con el que entró la mercadería, guardado en la línea: la ganancia
+      // del mes se calcula con el costo del día de la venta, no con el de hoy.
+      costo: costoDe(stock, producto.id),
+    }
     // Sin ningún jugador el consumo se carga como venta de mostrador: alguien que
     // no estaba jugando y se llevó algo. Queda marcado para no confundirlo con un
     // consumo al que se olvidaron de ponerle el nombre.
@@ -55,15 +74,29 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
       : [{ ...lineaMostrador(base) }]
     if (!nuevas.length) return
     update((prev) => ({ ...prev, consumos: [...(prev.consumos || []), ...nuevas] }))
+    // Un producto compartido sale una sola vez del stock, aunque sean varias líneas.
+    const unidades = unidadesPorProducto(nuevas, nuevas)
+    moverStock(Object.fromEntries(Object.entries(unidades).map(([id, n]) => [id, -n])))
     setJugador('')
     setReparto([])
   }
 
-  const setCantidad = (consumo, cantidad) =>
-    update((prev) => setCantidadConsumo(prev, consumo, cantidad))
+  const setCantidad = (consumo, cantidad) => {
+    const nueva = Math.max(1, Number(cantidad) || 1)
+    const vieja = Math.max(1, Number(consumo.cantidad) || 1)
+    if (nueva === vieja) return
+    moverStock({ [consumo.productoId]: vieja - nueva })
+    update((prev) => setCantidadConsumo(prev, consumo, nueva))
+  }
 
-  const removeConsumo = (id) =>
-    update((prev) => ({ ...prev, consumos: (prev.consumos || []).filter((c) => c.id !== id) }))
+  const removeConsumo = (consumo) => {
+    // La mercadería vuelve al stock solo al borrar la última parte: mientras
+    // quede alguna, el producto se consumió igual y no volvió a la heladera.
+    if (grupoDe(todos, consumo).length <= 1) {
+      moverStock({ [consumo.productoId]: Math.max(1, Number(consumo.cantidad) || 1) })
+    }
+    update((prev) => ({ ...prev, consumos: (prev.consumos || []).filter((c) => c.id !== consumo.id) }))
+  }
 
   const dividir = (consumo, nombres) => {
     update((prev) => redividirConsumo(prev, consumo, nombres))
@@ -119,11 +152,17 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
           value={productoId}
           onChange={(e) => setProductoId(e.target.value)}
         >
-          {productos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre} · {formatMoney(p.precio)}
-            </option>
-          ))}
+          {productos.map((p) => {
+            // De los productos con stock cargado se ve cuánto queda; los que no
+            // se controlan (alquiler de paletas y demás) se listan como siempre.
+            const queda = cantidadDe(stock, p.id)
+            return (
+              <option key={p.id} value={p.id}>
+                {p.nombre} · {formatMoney(p.precio)}
+                {queda === null ? '' : queda > 0 ? ` · quedan ${queda}` : ' · sin stock'}
+              </option>
+            )
+          })}
         </select>
         {nombresACargar.length > 1 && producto && (
           <p className="reparto__hint muted">
@@ -227,7 +266,7 @@ export default function ConsumosPanel({ config, planilla, update, sugerencias, o
                     ÷
                   </button>
                   <BotonBorrar
-                    onConfirm={() => removeConsumo(c.id)}
+                    onConfirm={() => removeConsumo(c)}
                     title={partido ? 'Quitar esta parte' : 'Quitar consumo'}
                   />
                 </>

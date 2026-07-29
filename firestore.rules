@@ -6,6 +6,8 @@ rules_version = '2';
 //   clubs/{clubId}/config/club      canchas, horarios, productos
 //   clubs/{clubId}/planillas/{YYYY-MM-DD}
 //   clubs/{clubId}/jugadores/{id}
+//   clubs/{clubId}/stock/{productoId}   { cantidad, costo, minimo, actualizado }
+//   clubs/{clubId}/stockCompras/{id}    { productoId, nombre, cantidad, costo, fecha, ts }
 //   clubs/{clubId}/fiadoPagos|fiadoCargos|fiadoCortes|fiadoArchivados/{id}
 //
 // Acceso:
@@ -63,6 +65,14 @@ service cloud.firestore {
       }
 
       match /jugadores/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /stock/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /stockCompras/{doc} {
         allow read, write: if isMember(clubId);
       }
 

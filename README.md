@@ -18,9 +18,16 @@ propios datos.
   canchas se agrupan por horario: las que coinciden comparten una columna de
   horarios, y cada grupo distinto arma su propia tabla al lado.
 - **Panel de consumos** con selector de productos del club (cerveza, agua, etc.),
-  cantidad y tipo de pago. En clubes de 3 canchas o más, Cuentas y Consumos
-  dejan la columna del costado y se abren desde la solapa del borde derecho,
-  para que la planilla use todo el ancho de la pantalla.
+  cantidad y tipo de pago. Un producto se puede **dividir entre varios
+  jugadores** (el tubo de pelotas que pagan entre cuatro) y, si no se anota
+  jugador, queda como **venta de mostrador**: alguien que no estaba jugando, con
+  su propio cobro. En clubes de 3 canchas o más, Cuentas y Consumos dejan la
+  columna del costado y se abren desde la solapa del borde derecho, para que la
+  planilla use todo el ancho de la pantalla.
+- **Stock** de la mercadería: se carga con las compras (cantidad y costo) y cada
+  consumo lo descuenta solo. Muestra cuánta plata hay en mercadería, avisa qué
+  hay que reponer y en el resumen del mes calcula la ganancia de los consumos.
+  Un producto sin compras cargadas se vende sin descontar nada.
 - **Totales del día** discriminados por tipo de pago, en tiempo real.
 - **Navegación por fecha**: cada día tiene su propia planilla.
 - **Saldos / fiados** y **resumen mensual** por club.

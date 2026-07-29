@@ -49,23 +49,35 @@ export function nombresUnicos(nombres = []) {
  * solo jugador devuelve la línea de siempre (sin grupo ni parte); con varios,
  * una línea por jugador con el precio repartido.
  */
-export function lineasConsumo({ productoId, nombre, precio }, nombres, cantidad = 1) {
+export function lineasConsumo({ productoId, nombre, precio, costo = 0 }, nombres, cantidad = 1) {
   const lista = nombresUnicos(nombres)
   if (!lista.length) return []
   const qty = Math.max(1, Number(cantidad) || 1)
   const base = { productoId, nombre, cantidad: qty, pagado: false }
 
   if (lista.length === 1) {
-    return [{ id: uid(), jugador: lista[0], ...base, precio: Math.round(Number(precio) || 0) }]
+    return [
+      {
+        id: uid(),
+        jugador: lista[0],
+        ...base,
+        precio: Math.round(Number(precio) || 0),
+        costo: Math.round(Number(costo) || 0),
+      },
+    ]
   }
 
+  // El costo se reparte igual que el precio, así sumando las partes vuelve a dar
+  // el costo del producto entero y la ganancia del mes no se cuenta de más.
   const partes = repartirMonto(precio, lista.length)
+  const costos = repartirMonto(costo, lista.length)
   const grupoId = uid()
   return lista.map((jugador, i) => ({
     id: uid(),
     jugador,
     ...base,
     precio: partes[i],
+    costo: costos[i],
     grupoId,
     parte: { n: i + 1, de: lista.length },
   }))
@@ -76,7 +88,7 @@ export function lineasConsumo({ productoId, nombre, precio }, nombres, cantidad 
  * sin jugador a propósito y marcado con `mostrador`, para distinguirlo de un
  * consumo al que le falta el nombre. Cada uno se cobra por separado.
  */
-export function lineaMostrador({ productoId, nombre, precio }, cantidad = 1) {
+export function lineaMostrador({ productoId, nombre, precio, costo = 0 }, cantidad = 1) {
   return {
     id: uid(),
     jugador: '',
@@ -84,6 +96,7 @@ export function lineaMostrador({ productoId, nombre, precio }, cantidad = 1) {
     productoId,
     nombre,
     precio: Math.round(Number(precio) || 0),
+    costo: Math.round(Number(costo) || 0),
     cantidad: Math.max(1, Number(cantidad) || 1),
     pagado: false,
   }
@@ -142,6 +155,9 @@ export function redividirConsumo(planilla, consumo, nombres) {
       productoId: consumo.productoId,
       nombre: consumo.nombre,
       precio: grupo.reduce((s, c) => s + (Number(c.precio) || 0), 0),
+      // El costo con el que entró la mercadería se conserva: es el del día en que
+      // se cargó la venta, no el de la última compra.
+      costo: grupo.reduce((s, c) => s + (Number(c.costo) || 0), 0),
     },
     nombres,
     consumo.cantidad,

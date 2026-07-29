@@ -106,6 +106,39 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
                 </p>
               )}
 
+              {/* Ganancia de los consumos: lo vendido menos lo que costó */}
+              {r.consumos.venta > 0 && (
+                <section className="cfg-section">
+                  <div className="cfg-section__head">
+                    <h3 className="cfg-section__title">Consumos del mes</h3>
+                    <span className="resumen__anotado-total">
+                      {formatMoney(r.consumos.ganancia)} de ganancia
+                    </span>
+                  </div>
+                  <div className="resumen__cards">
+                    <div className="resumen__card" style={{ '--pago-color': '#16a34a' }}>
+                      <span className="resumen__card-label">Vendido</span>
+                      <span className="resumen__card-value">{formatMoney(r.consumos.venta)}</span>
+                    </div>
+                    <div className="resumen__card" style={{ '--pago-color': '#dc2626' }}>
+                      <span className="resumen__card-label">Costo de la mercadería</span>
+                      <span className="resumen__card-value">{formatMoney(r.consumos.costo)}</span>
+                    </div>
+                    <div className="resumen__card" style={{ '--pago-color': '#2563eb' }}>
+                      <span className="resumen__card-label">Ganancia</span>
+                      <span className="resumen__card-value">{formatMoney(r.consumos.ganancia)}</span>
+                    </div>
+                  </div>
+                  {r.consumos.sinCosto > 0 && (
+                    <p className="cfg-hint">
+                      {formatMoney(r.consumos.sinCosto)} de consumos no tienen costo cargado (se
+                      vendieron antes de llevar el stock, o de un producto sin control), así que la
+                      ganancia real es menor.
+                    </p>
+                  )}
+                </section>
+              )}
+
               {/* Desglose por día */}
               <section className="cfg-section">
                 <h3 className="cfg-section__title">Por día</h3>

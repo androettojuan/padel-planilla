@@ -21,6 +21,10 @@ export function resumenMensual(planillas, fiadoPagos = []) {
   const anotadoDetalle = []
   const fiadoCobrado = { contado: 0, mercado: 0, total: 0 }
   const fiadoCobradoDetalle = []
+  // Consumos vendidos y lo que costó esa mercadería, para la ganancia del mes. El
+  // costo sale de cada línea (el del día de la venta); las líneas cargadas antes
+  // de que existiera el stock no lo tienen y quedan sin costo.
+  const consumos = { venta: 0, costo: 0, conCosto: 0, sinCosto: 0 }
 
   const dia = (dateKey) => {
     if (!porDiaMap.has(dateKey)) {
@@ -53,8 +57,16 @@ export function resumenMensual(planillas, fiadoPagos = []) {
       }
     }
     for (const c of data?.consumos || []) {
-      const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)
+      const cantidad = Number(c.cantidad) || 0
+      const sub = (Number(c.precio) || 0) * cantidad
       registrar(dateKey, sub, c.pagado, c.pago, nombreConsumo(c), conceptoConsumo(c))
+      if (sub > 0) {
+        consumos.venta += sub
+        const costo = (Number(c.costo) || 0) * cantidad
+        consumos.costo += costo
+        if (c.costo === undefined || c.costo === null) consumos.sinCosto += sub
+        else consumos.conCosto += sub
+      }
     }
     for (const tab of data?.mostrador || []) {
       for (const it of tab.items || []) {
@@ -100,5 +112,6 @@ export function resumenMensual(planillas, fiadoPagos = []) {
     anotadoDetalle,
     fiadoCobrado,
     fiadoCobradoDetalle,
+    consumos: { ...consumos, ganancia: consumos.venta - consumos.costo },
   }
 }

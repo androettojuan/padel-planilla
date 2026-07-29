@@ -1,7 +1,15 @@
 import { PAGOS } from '../data/defaults'
 import { formatLongDate, formatMoney, shiftDateKey, todayKey } from '../utils/helpers'
 
-export default function DateToolbar({ dateKey, onChange, totals, onOpenResumen, onOpenSaldos }) {
+export default function DateToolbar({
+  dateKey,
+  onChange,
+  totals,
+  onOpenResumen,
+  onOpenSaldos,
+  onOpenStock,
+  stockBajo = false,
+}) {
   return (
     <div className="toolbar">
       <div className="toolbar__date">
@@ -28,6 +36,14 @@ export default function DateToolbar({ dateKey, onChange, totals, onOpenResumen, 
         </button>
         <button className="btn" onClick={onOpenSaldos} title="Saldos / Fiados">
           💳 Fiados
+        </button>
+        <button
+          className="btn"
+          onClick={onOpenStock}
+          title={stockBajo ? 'Stock: hay productos para reponer' : 'Stock del club'}
+        >
+          📦 Stock
+          {stockBajo && <span className="btn__alerta" aria-label="Hay productos para reponer" />}
         </button>
       </div>
 
