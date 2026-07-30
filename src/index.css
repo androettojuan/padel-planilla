@@ -1076,13 +1076,19 @@ select {
 }
 .reserva__pago {
   display: grid;
-  grid-template-columns: minmax(60px, 1fr) auto auto 26px;
+  /* La última columna deja lugar para el ✓ ✕ de la confirmación de borrado, así
+     la fila no se desarma cuando aparece. */
+  grid-template-columns: minmax(50px, 1fr) auto auto 56px;
   gap: 6px;
   align-items: center;
   padding: 4px 6px;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   font-size: 12px;
+}
+.reserva__pago .confirm-inline,
+.reserva__pago > button[aria-label='Quitar'] {
+  justify-self: end;
 }
 .reserva__pago-nombre {
   overflow: hidden;
