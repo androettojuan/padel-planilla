@@ -257,6 +257,29 @@ export async function deshacerCompra(clubId, compra) {
   await recalcularCosto(clubId, compra.productoId)
 }
 
+/**
+ * Compras cargadas en un mes ("YYYY-MM"), para saber cuánto se gastó reponiendo
+ * mercadería. Se filtra por el campo `fecha` (YYYY-MM-DD) con un rango de texto,
+ * que al ser un solo campo no necesita índice compuesto.
+ */
+export async function loadComprasMes(clubId, monthKey) {
+  const desde = `${monthKey}-01`
+  const hasta = `${monthKey}-31`
+  if (!isFirebaseConfigured) {
+    return readLocal(clubId, 'stockCompras', []).filter(
+      (c) => (c.fecha || '') >= desde && (c.fecha || '') <= hasta,
+    )
+  }
+  const snap = await getDocs(
+    query(
+      clubCol(clubId, 'stockCompras'),
+      where('fecha', '>=', desde),
+      where('fecha', '<=', hasta),
+    ),
+  )
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 // Últimas compras cargadas, de la más nueva a la más vieja.
 export async function loadCompras(clubId, max = 30) {
   if (!isFirebaseConfigured) {

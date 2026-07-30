@@ -306,6 +306,36 @@ select {
   padding: 12px 14px;
 }
 
+/* Lista de líneas con monto a la derecha (vendido, costo, ganancia…). */
+.resumen__lineas {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.resumen__linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.resumen__linea:last-child {
+  border-bottom: none;
+}
+.resumen__linea-monto {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.resumen__linea--total {
+  font-weight: 800;
+}
+.resumen__linea--total .resumen__linea-monto {
+  font-size: 15px;
+  color: var(--primary-dark);
+}
+
 /* Subtítulo con total, para separar bloques dentro de una pantalla. */
 .resumen__sub {
   display: flex;
