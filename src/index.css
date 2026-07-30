@@ -1076,9 +1076,10 @@ select {
 }
 .reserva__pago {
   display: grid;
-  /* La última columna deja lugar para el ✓ ✕ de la confirmación de borrado, así
-     la fila no se desarma cuando aparece. */
-  grid-template-columns: minmax(50px, 1fr) auto auto 56px;
+  /* La última columna se adapta a lo que haya: el "×" solo, o el ✓ ✕ de la
+     confirmación. El lugar que necesita de más sale del nombre, que es lo
+     elástico de la fila; así no queda un hueco reservado cuando no hace falta. */
+  grid-template-columns: minmax(40px, 1fr) auto auto auto;
   gap: 6px;
   align-items: center;
   padding: 4px 6px;
