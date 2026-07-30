@@ -45,7 +45,7 @@ const CANCHAS_PARA_ANCHO_MAX = 4
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const { ruta, ir } = useRuta()
+  const { ruta, ir, bloquearSalida } = useRuta()
 
   const sesion = useSesion()
   const {
@@ -237,7 +237,14 @@ export default function App() {
         )}
 
         {ruta === 'config' && (
-          <ConfigPage config={config} club={club} onSave={saveConfig} onSaveClub={saveClub} />
+          <ConfigPage
+            config={config}
+            club={club}
+            onSave={saveConfig}
+            onSaveClub={saveClub}
+            bloquearSalida={bloquearSalida}
+            ir={ir}
+          />
         )}
 
         {ruta === 'clubes' && superAdmin && (

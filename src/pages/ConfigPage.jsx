@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { uid, normalizeTime, normalizeNombre } from '../utils/helpers'
+import { uid, normalizeTime } from '../utils/helpers'
 import { generarFranjas, reglaDeFranjas, horarioLabel } from '../data/defaults'
 import { esReserva, MODO_JUGADORES, MODO_RESERVA, modoPlanilla } from '../utils/turnos'
+import { useCambiosSinGuardar } from '../hooks/useCambiosSinGuardar'
 import BotonBorrar from '../components/BotonBorrar'
 import Pantalla from '../components/Pantalla'
+
+// Con qué se compara para saber si hay algo sin guardar. Se mira el contenido y
+// no las referencias: mover una franja y volverla a su lugar no deja "cambios".
+const firma = (config, club) => JSON.stringify([config, club])
 
 // Duraciones ofrecidas al generar las franjas. Cualquier otra combinación se
 // arma editando las franjas a mano.
@@ -24,15 +29,23 @@ const DOW = [
   { id: 0, label: 'Dom' },
 ]
 
-export default function ConfigPage({ config, club, onSave, onSaveClub }) {
+export default function ConfigPage({ config, club, onSave, onSaveClub, bloquearSalida, ir }) {
   const [draft, setDraft] = useState(() => structuredClone(config))
   // El nombre y la ubicación viven en el documento del club, no en su config.
   const [clubDraft, setClubDraft] = useState(() => ({
     nombre: club?.nombre || '',
     ubicacion: club?.ubicacion || '',
   }))
+  // Cómo estaba la configuración la última vez que se guardó (o al entrar).
+  const [guardadoComo, setGuardadoComo] = useState(() =>
+    firma(config, { nombre: club?.nombre || '', ubicacion: club?.ubicacion || '' }),
+  )
   const [saving, setSaving] = useState(false)
   const [guardado, setGuardado] = useState(false)
+  const [error, setError] = useState(null)
+
+  const hayCambios = firma(draft, clubDraft) !== guardadoComo
+  const { pendiente, salir, quedarse } = useCambiosSinGuardar({ hayCambios, bloquearSalida, ir })
   // Pestaña de horarios activa: null = "Por defecto", o un día de la semana (0-6).
   const [dow, setDow] = useState(null)
   // Horario que se está editando: null = el del club, o el id de una cancha.
@@ -167,6 +180,7 @@ export default function ConfigPage({ config, club, onSave, onSaveClub }) {
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     const normList = (list) =>
       (list || []).map((h) => ({ ...h, desde: normalizeTime(h.desde), hasta: normalizeTime(h.hasta) }))
     const normByDow = (byDow) => {
@@ -202,20 +216,35 @@ export default function ConfigPage({ config, club, onSave, onSaveClub }) {
       productos: (draft.productos || []).map((p) => ({ ...p, precio: Number(p.precio) || 0 })),
       modoPlanilla: modoPlanilla(draft),
     }
+    const datosClub = {
+      nombre: clubDraft.nombre.trim() || club?.nombre || 'Club',
+      ubicacion: clubDraft.ubicacion.trim(),
+    }
     try {
       await onSave(clean)
-      if (onSaveClub) {
-        await onSaveClub({
-          nombre: clubDraft.nombre.trim() || club?.nombre || 'Club',
-          ubicacion: clubDraft.ubicacion.trim(),
-        })
-      }
+      if (onSaveClub) await onSaveClub(datosClub)
+      // Lo que se ve pasa a ser lo guardado —con las horas ya normalizadas— y esa
+      // queda como la versión limpia contra la que se comparan los cambios.
+      setDraft(clean)
+      setClubDraft(datosClub)
+      setGuardadoComo(firma(clean, datosClub))
       // Ya no hay modal que cerrar: se avisa en el pie y la sección queda abierta.
       setGuardado(true)
       setTimeout(() => setGuardado(false), 2500)
+      return true
+    } catch (err) {
+      // Si el guardado falla, lo que se escribió sigue en pantalla: el aviso es
+      // para que no se salga creyendo que quedó guardado.
+      setError(err)
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  // Desde el cartel de salida: guarda y recién entonces se va.
+  const guardarYSalir = async (destino) => {
+    if (await handleSave()) salir(destino)
   }
 
   return (
@@ -224,13 +253,50 @@ export default function ConfigPage({ config, club, onSave, onSaveClub }) {
       descripcion="Los datos del club, sus canchas y los horarios de los turnos."
       footer={
         <>
-          {guardado && <span className="muted">Cambios guardados.</span>}
-          <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
+          {error ? (
+            <span className="cfg-pendiente">No se pudo guardar: {error.message}</span>
+          ) : guardado ? (
+            <span className="muted">Cambios guardados.</span>
+          ) : (
+            hayCambios && <span className="cfg-pendiente">Tenés cambios sin guardar.</span>
+          )}
+          <button
+            className="btn btn--primary"
+            onClick={handleSave}
+            disabled={saving || !hayCambios}
+          >
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
         </>
       }
     >
+      {pendiente && (
+        <div className="salir-aviso" role="dialog" aria-modal="true" aria-label="Cambios sin guardar">
+          <div className="salir-aviso__caja">
+            <p className="salir-aviso__titulo">Tenés cambios sin guardar</p>
+            <p className="salir-aviso__texto">
+              Si salís de Configuración ahora, queda como estaba antes de tus cambios.
+            </p>
+            <div className="salir-aviso__acciones">
+              <button className="btn btn--ghost-sm" onClick={quedarse}>
+                Seguir editando
+              </button>
+              <span className="salir-aviso__sep" />
+              <button className="btn" onClick={() => salir(pendiente)} disabled={saving}>
+                Salir sin guardar
+              </button>
+              <button
+                className="btn btn--primary"
+                onClick={() => guardarYSalir(pendiente)}
+                disabled={saving}
+              >
+                {saving ? 'Guardando…' : 'Guardar y salir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
           {/* Club */}
           <section className="cfg-section">
             <h3 className="cfg-section__title">Club</h3>

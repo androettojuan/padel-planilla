@@ -438,6 +438,54 @@ select {
   border-top: 1px solid var(--border);
   background: var(--surface-2);
 }
+/* Aviso de que quedó algo sin guardar, en el pie de Configuración. */
+.cfg-pendiente {
+  font-size: 13px;
+  color: #b45309;
+  margin-right: auto;
+}
+
+/* ---------- Cartel al salir con cambios sin guardar ---------- */
+.salir-aviso {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.salir-aviso__caja {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+}
+.salir-aviso__titulo {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.salir-aviso__texto {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.salir-aviso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+/* Empuja las dos acciones que cierran el cartel hacia la derecha, dejando
+   "Seguir editando" —volver a lo que estaba haciendo— aparte, a la izquierda. */
+.salir-aviso__sep {
+  flex: 1;
+}
+
 /* Solapas dentro de una sección (Finanzas: mes / fiados). */
 .subnav {
   display: flex;
