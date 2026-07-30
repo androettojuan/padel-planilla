@@ -46,10 +46,18 @@ export function buildCuentas(planilla, config) {
     if (!groups.has(key)) groups.set(key, { key, turnos: [], consumos: [], ...extra })
     return groups.get(key)
   }
-  // Un consumo de mostrador va en su propia cuenta; el resto se junta por jugador.
+  // Los consumos sin dueño —una venta de mostrador, o la parte de algo dividido
+  // sin decir entre quiénes— van cada uno en su propia cuenta: nadie puede
+  // cobrarlos juntos porque no se sabe si son de la misma persona. El resto se
+  // junta por jugador, como siempre.
+  const suelto = (c) => !nombreDe(c) && (c.mostrador || c.parte?.de > 1)
   const grupoDeConsumo = (c) =>
-    c.mostrador
-      ? getGroup(`mostrador#${c.id}`, { nombre: MOSTRADOR_LABEL, mostrador: true })
+    suelto(c)
+      ? getGroup(`suelto#${c.id}`, {
+          nombre: c.mostrador ? MOSTRADOR_LABEL : '',
+          mostrador: !!c.mostrador,
+          suelto: true,
+        })
       : getGroup(nombreDe(c), { nombre: nombreDe(c) })
 
   for (const [key, lista] of Object.entries(planilla?.turnos || {})) {
@@ -84,6 +92,7 @@ export function buildCuentas(planilla, config) {
         key: g.key,
         nombre: g.nombre,
         mostrador: !!g.mostrador,
+        suelto: !!g.suelto,
         turnos: turnosPend,
         consumos: consumosPend,
         totalTurnos,
@@ -110,6 +119,7 @@ export function buildCuentas(planilla, config) {
         key: g.key,
         nombre: g.nombre,
         mostrador: !!g.mostrador,
+        suelto: !!g.suelto,
         turnos: grp.turnos,
         consumos: grp.consumos,
         totalTurnos: tt,
@@ -136,12 +146,15 @@ export function buildCuentas(planilla, config) {
 // líneas por nombre, y la de mostrador solo la venta suelta que la originó.
 export function aplicarPago(planilla, cuenta, medio, pagado) {
   const objetivo = (cuenta?.nombre || '').trim()
-  const idsMostrador = new Set((cuenta?.consumos || []).map((c) => c.id))
-  const pertenece = cuenta?.mostrador
-    ? (item) => item?.mostrador && idsMostrador.has(item.id)
-    : // Sin esto, la cuenta "Sin asignar" (jugador vacío) se llevaría también
-      // las ventas de mostrador, que no tienen nombre a propósito.
-      (item) => !item?.mostrador && (item?.jugador || '').trim() === objetivo
+  const idsSueltos = new Set((cuenta?.consumos || []).map((c) => c.id))
+  const esSuelto = (item) => !!item?.mostrador || item?.parte?.de > 1
+  const pertenece = cuenta?.suelto
+    ? (item) => esSuelto(item) && !(item.jugador || '').trim() && idsSueltos.has(item.id)
+    : // Sin esto, la cuenta "Sin asignar" (jugador vacío) se llevaría también los
+      // consumos sueltos, que no tienen nombre a propósito y se cobran uno a uno.
+      (item) =>
+        !(esSuelto(item) && !(item.jugador || '').trim()) &&
+        (item?.jugador || '').trim() === objetivo
   const afecta = pagado
     ? (item) => pertenece(item) && !item.pagado
     : (item) => pertenece(item) && item.pagado && item.pago === medio

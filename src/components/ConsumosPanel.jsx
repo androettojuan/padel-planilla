@@ -34,6 +34,9 @@ export default function ConsumosPanel({
   const [jugador, setJugador] = useState('')
   // Jugadores agregados con "+" para repartir el consumo que se está cargando.
   const [reparto, setReparto] = useState([])
+  // Entre cuántos se divide. Se puede subir sin cargar nombres: el club que solo
+  // anota al que reserva parte una cerveza en tres y cobra cada parte por su lado.
+  const [partes, setPartes] = useState(1)
   // Id del consumo cuyo formulario de división está abierto.
   const [dividiendo, setDividiendo] = useState(null)
 
@@ -45,6 +48,8 @@ export default function ConsumosPanel({
 
   // Los del "+" más lo que haya quedado escrito en el input.
   const nombresACargar = nombresUnicos([...reparto, jugador])
+  // Nunca menos partes que nombres cargados: cada uno tiene que tener la suya.
+  const enCuantas = Math.max(partes, nombresACargar.length)
 
   const sumarAlReparto = () => {
     const nombre = jugador.trim()
@@ -69,9 +74,10 @@ export default function ConsumosPanel({
     // Sin ningún jugador el consumo se carga como venta de mostrador: alguien que
     // no estaba jugando y se llevó algo. Queda marcado para no confundirlo con un
     // consumo al que se olvidaron de ponerle el nombre.
-    const nuevas = nombresACargar.length
-      ? lineasConsumo(base, nombresACargar)
-      : [{ ...lineaMostrador(base) }]
+    const nuevas =
+      nombresACargar.length || enCuantas > 1
+        ? lineasConsumo(base, nombresACargar, 1, enCuantas)
+        : [{ ...lineaMostrador(base) }]
     if (!nuevas.length) return
     update((prev) => ({ ...prev, consumos: [...(prev.consumos || []), ...nuevas] }))
     // Un producto compartido sale una sola vez del stock, aunque sean varias líneas.
@@ -79,6 +85,7 @@ export default function ConsumosPanel({
     moverStock(Object.fromEntries(Object.entries(unidades).map(([id, n]) => [id, -n])))
     setJugador('')
     setReparto([])
+    setPartes(1)
   }
 
   const setCantidad = (consumo, cantidad) => {
@@ -164,24 +171,48 @@ export default function ConsumosPanel({
             )
           })}
         </select>
-        {nombresACargar.length > 1 && producto && (
+        <div className="partes">
+          <span className="partes__label">Dividir entre</span>
+          <button
+            className="qty-btn"
+            onClick={() => setPartes((n) => Math.max(1, n - 1))}
+            disabled={enCuantas <= 1 || enCuantas <= nombresACargar.length}
+            aria-label="Entre menos"
+          >
+            −
+          </button>
+          <span className="qty-value">{enCuantas}</span>
+          <button
+            className="qty-btn"
+            onClick={() => setPartes(enCuantas + 1)}
+            aria-label="Entre más"
+          >
+            +
+          </button>
+        </div>
+        {enCuantas > 1 && producto && (
           <p className="reparto__hint muted">
-            {formatMoney(producto.precio)} ÷ {nombresACargar.length} ={' '}
-            {repartirMonto(producto.precio, nombresACargar.length)
+            {formatMoney(producto.precio)} ÷ {enCuantas} ={' '}
+            {repartirMonto(producto.precio, enCuantas)
               .map((p) => formatMoney(p))
               .join(' · ')}
           </p>
         )}
         <button className="btn btn--primary" onClick={addConsumo}>
-          {nombresACargar.length === 0
-            ? 'Agregar al mostrador'
-            : nombresACargar.length > 1
-              ? `Agregar y dividir entre ${nombresACargar.length}`
+          {enCuantas > 1
+            ? `Agregar dividido entre ${enCuantas}`
+            : nombresACargar.length === 0
+              ? 'Agregar al mostrador'
               : 'Agregar'}
         </button>
-        {nombresACargar.length === 0 && (
+        {enCuantas === 1 && nombresACargar.length === 0 && (
           <p className="reparto__hint muted">
             Sin jugador se anota como venta de mostrador: alguien que no estaba jugando.
+          </p>
+        )}
+        {enCuantas > 1 && nombresACargar.length < enCuantas && (
+          <p className="reparto__hint muted">
+            Las partes sin nombre se cobran cada una por su lado.
           </p>
         )}
       </div>

@@ -4,14 +4,14 @@ import { formatMoney } from '../utils/helpers'
 import { buildCuentas, aplicarPago, SIN_ASIGNAR_LABEL, MOSTRADOR_LABEL } from '../utils/cuentas'
 import { conceptoConsumo } from '../utils/consumos'
 
-// Cómo se titula la cuenta: el jugador, o "Mostrador · Cerveza" para una venta
-// suelta, donde el producto es lo único que la distingue de las otras.
+// Cómo se titula la cuenta. Las de un jugador llevan su nombre; las sueltas —una
+// venta de mostrador, o la parte de algo dividido sin nombres— se distinguen por
+// el producto, que es lo único que tienen: "Mostrador · Cerveza", "Cerveza (1/3)".
 function etiqueta(cuenta) {
-  if (cuenta.mostrador) {
-    const productos = (cuenta.consumos || []).map(conceptoConsumo).join(' · ')
-    return productos ? `${MOSTRADOR_LABEL} · ${productos}` : MOSTRADOR_LABEL
-  }
-  return cuenta.nombre || SIN_ASIGNAR_LABEL
+  if (!cuenta.suelto) return cuenta.nombre || SIN_ASIGNAR_LABEL
+  const productos = (cuenta.consumos || []).map(conceptoConsumo).join(' · ')
+  if (!cuenta.mostrador) return productos || SIN_ASIGNAR_LABEL
+  return productos ? `${MOSTRADOR_LABEL} · ${productos}` : MOSTRADOR_LABEL
 }
 
 export default function CuentasPanel({ config, planilla, update }) {

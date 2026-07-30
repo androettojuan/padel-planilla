@@ -1287,6 +1287,18 @@ select {
   font-size: 11px;
   margin: 0;
 }
+/* Entre cuántos se divide el consumo que se está cargando. */
+.partes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.partes__label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
 
 .consumos__list {
   list-style: none;

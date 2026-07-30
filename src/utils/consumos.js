@@ -49,17 +49,26 @@ export function nombresUnicos(nombres = []) {
  * solo jugador devuelve la línea de siempre (sin grupo ni parte); con varios,
  * una línea por jugador con el precio repartido.
  */
-export function lineasConsumo({ productoId, nombre, precio, costo = 0 }, nombres, cantidad = 1) {
+export function lineasConsumo(
+  { productoId, nombre, precio, costo = 0 },
+  nombres,
+  cantidad = 1,
+  partes = 0,
+) {
   const lista = nombresUnicos(nombres)
-  if (!lista.length) return []
+  // Se puede dividir sin decir entre quiénes: en los clubes que solo anotan al
+  // que reserva, poner nombres para partir una cerveza es trabajo al pedo. Las
+  // partes sin nombre se cobran igual, cada una por su lado.
+  const total = Math.max(lista.length, Math.floor(Number(partes) || 0))
+  if (total < 1) return []
   const qty = Math.max(1, Number(cantidad) || 1)
   const base = { productoId, nombre, cantidad: qty, pagado: false }
 
-  if (lista.length === 1) {
+  if (total === 1) {
     return [
       {
         id: uid(),
-        jugador: lista[0],
+        jugador: lista[0] || '',
         ...base,
         precio: Math.round(Number(precio) || 0),
         costo: Math.round(Number(costo) || 0),
@@ -69,17 +78,17 @@ export function lineasConsumo({ productoId, nombre, precio, costo = 0 }, nombres
 
   // El costo se reparte igual que el precio, así sumando las partes vuelve a dar
   // el costo del producto entero y la ganancia del mes no se cuenta de más.
-  const partes = repartirMonto(precio, lista.length)
-  const costos = repartirMonto(costo, lista.length)
+  const montos = repartirMonto(precio, total)
+  const costos = repartirMonto(costo, total)
   const grupoId = uid()
-  return lista.map((jugador, i) => ({
+  return Array.from({ length: total }, (_, i) => ({
     id: uid(),
-    jugador,
+    jugador: lista[i] || '',
     ...base,
-    precio: partes[i],
+    precio: montos[i],
     costo: costos[i],
     grupoId,
-    parte: { n: i + 1, de: lista.length },
+    parte: { n: i + 1, de: total },
   }))
 }
 
