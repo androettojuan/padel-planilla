@@ -11,6 +11,7 @@ import { useRuta } from './hooks/useRuta'
 import { todayKey } from './utils/helpers'
 import { ejeHorarios } from './data/defaults'
 import { faltaReponer } from './utils/stock'
+import { lineasDeTurno } from './utils/turnos'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -275,7 +276,8 @@ function computeTotals(planilla) {
     acc.total += monto
   }
   for (const lista of Object.values(planilla.turnos || {})) {
-    for (const t of lista) sumar(Number(t.monto) || 0, t)
+    // Un turno de reserva aporta una línea por pago más lo que falte cobrar.
+    for (const t of lista) for (const l of lineasDeTurno(t)) sumar(l.monto, l)
   }
   for (const c of planilla.consumos || []) {
     sumar((Number(c.precio) || 0) * (Number(c.cantidad) || 0), c)

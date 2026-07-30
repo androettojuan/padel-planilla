@@ -1,5 +1,6 @@
 import { normalizeNombre } from './helpers'
 import { conceptoConsumo, nombreConsumo } from './consumos'
+import { lineasDeTurno } from './turnos'
 
 // Recorre todas las planillas y junta las líneas cobradas como "Anotado" (es
 // decir, fiadas): turnos, consumos y consumos de mostrador. Devuelve un cargo
@@ -14,7 +15,9 @@ export function cargosFiado(planillas) {
   }
   for (const { dateKey, data } of planillas) {
     for (const lista of Object.values(data?.turnos || {})) {
-      for (const t of lista) push(dateKey, Number(t.monto) || 0, t.pagado, t.pago, t.jugador, 'Turno')
+      for (const t of lista) {
+        for (const l of lineasDeTurno(t)) push(dateKey, l.monto, l.pagado, l.pago, l.jugador, 'Turno')
+      }
     }
     for (const c of data?.consumos || []) {
       const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)

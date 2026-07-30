@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { uid, normalizeTime, normalizeNombre } from '../utils/helpers'
 import { generarFranjas, reglaDeFranjas, horarioLabel } from '../data/defaults'
+import { esReserva, MODO_JUGADORES, MODO_RESERVA, modoPlanilla } from '../utils/turnos'
 import BotonBorrar from '../components/BotonBorrar'
 import Pantalla from '../components/Pantalla'
 
@@ -199,6 +200,7 @@ export default function ConfigPage({ config, club, onSave, onSaveClub }) {
       horarios: normList(draft.horarios),
       horariosByDow: normByDow(draft.horariosByDow),
       productos: (draft.productos || []).map((p) => ({ ...p, precio: Number(p.precio) || 0 })),
+      modoPlanilla: modoPlanilla(draft),
     }
     try {
       await onSave(clean)
@@ -267,6 +269,39 @@ export default function ConfigPage({ config, club, onSave, onSaveClub }) {
                 <BotonBorrar onConfirm={() => removeCancha(c.id)} title="Quitar cancha" />
               </div>
             ))}
+          </section>
+
+          {/* Cómo se anota cada turno */}
+          <section className="cfg-section">
+            <div className="cfg-section__head">
+              <h3 className="cfg-section__title">Cómo se anota cada turno</h3>
+            </div>
+            <div className="cfg-modos">
+              <button
+                className={`cfg-modo ${!esReserva(draft) ? 'is-active' : ''}`}
+                onClick={() => set({ modoPlanilla: MODO_JUGADORES })}
+              >
+                <span className="cfg-modo__titulo">Por jugadores</span>
+                <span className="cfg-modo__desc">
+                  Cuatro líneas por turno, una por jugador, cada una con su monto y su forma de
+                  pago. Sirve cuando se le cobra a cada uno por separado.
+                </span>
+              </button>
+              <button
+                className={`cfg-modo ${esReserva(draft) ? 'is-active' : ''}`}
+                onClick={() => set({ modoPlanilla: MODO_RESERVA })}
+              >
+                <span className="cfg-modo__titulo">Por reserva</span>
+                <span className="cfg-modo__desc">
+                  Una sola línea: quién reservó y cuánto sale el turno. Los pagos se cargan
+                  encima —cada uno con su nombre y su medio— hasta cubrirlo.
+                </span>
+              </button>
+            </div>
+            <p className="cfg-hint">
+              Cambiar de modo no toca lo ya cargado: cada planilla se sigue mostrando como se
+              anotó.
+            </p>
           </section>
 
           {/* Horarios */}

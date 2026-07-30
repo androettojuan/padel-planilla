@@ -1055,6 +1055,113 @@ select {
   pointer-events: none;
 }
 
+/* ---------- Celda de turno en modo reserva ---------- */
+.reserva {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reserva__head {
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) 90px;
+  gap: 6px;
+}
+.reserva__pagos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reserva__pago {
+  display: grid;
+  grid-template-columns: minmax(60px, 1fr) auto auto 26px;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.reserva__pago-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-soft);
+}
+.reserva__pago-monto {
+  font-weight: 700;
+}
+.reserva__form {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) 78px auto auto auto;
+  gap: 4px;
+  align-items: center;
+}
+.reserva__form .player__name,
+.reserva__form .player__money {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.btn--sm {
+  padding: 6px 9px;
+}
+.reserva__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.reserva__pie .cell__add {
+  width: auto;
+  flex: 1;
+}
+.reserva__estado {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.reserva__estado--ok {
+  color: var(--primary-dark);
+}
+
+/* Elegir cómo se anota cada turno (config). */
+.cfg-modos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cfg-modo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.cfg-modo:hover {
+  border-color: var(--primary);
+}
+.cfg-modo.is-active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.cfg-modo__titulo {
+  font-size: 14px;
+  font-weight: 800;
+}
+.cfg-modo__desc {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
 /* ---------- Confirmación inline ---------- */
 .confirm-inline {
   display: flex;

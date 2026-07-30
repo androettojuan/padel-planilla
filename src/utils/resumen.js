@@ -13,6 +13,7 @@
 // y en un solo lugar.
 
 import { conceptoConsumo, nombreConsumo } from './consumos'
+import { lineasDeTurno } from './turnos'
 
 const PAGO_IDS = ['contado', 'mercado', 'anotado']
 
@@ -54,7 +55,9 @@ export function resumenMensual(planillas, fiadoPagos = []) {
   for (const { dateKey, data } of planillas) {
     for (const lista of Object.values(data?.turnos || {})) {
       for (const t of lista) {
-        registrar(dateKey, Number(t.monto) || 0, t.pagado, t.pago, t.jugador, 'Turno')
+        for (const l of lineasDeTurno(t)) {
+          registrar(dateKey, l.monto, l.pagado, l.pago, l.jugador, 'Turno')
+        }
       }
     }
     for (const c of data?.consumos || []) {

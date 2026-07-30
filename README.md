@@ -26,8 +26,17 @@ de la cuenta, arriba a la derecha, y solo la ven los super admins.
 
 ## Qué hace
 
-- **Grilla de turnos** por cancha y franja horaria. En cada turno se anota el
-  jugador, el monto y el tipo de pago (Contado / Mercado Pago / Anotado).
+- **Grilla de turnos** por cancha y franja horaria, con dos formas de anotar que
+  se eligen en Configuración:
+  - **Por jugadores** (por defecto): cuatro líneas por turno, una por jugador,
+    cada una con su monto y su tipo de pago (Contado / Mercado Pago / Anotado).
+  - **Por reserva**: una sola línea con quién reservó y cuánto sale el turno; los
+    pagos se cargan encima —cada uno con su nombre y su medio— hasta cubrirlo, y
+    la celda muestra cuánto falta. Sirve para los clubes que solo anotan a quien
+    reserva y le cobran después.
+
+  Cambiar de modo no toca lo ya cargado: cada turno se sigue mostrando como se
+  anotó.
 - **Horarios**: se cargan diciendo a qué hora abre y cierra el club y cuánto
   dura el turno, y la app genera las franjas (después se pueden retocar a mano).
   Cada cancha puede tener su propio horario, y cualquiera de los dos —club o

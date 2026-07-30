@@ -1,5 +1,12 @@
 import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
 import { MOSTRADOR_LABEL } from './consumos'
+import {
+  agregarPago,
+  lineasDeTurno,
+  pagosDe,
+  saldoTurno,
+  tienePagos,
+} from './turnos'
 
 // Nombre que agrupa las líneas sin jugador asignado.
 export const SIN_ASIGNAR = ''
@@ -48,13 +55,17 @@ export function buildCuentas(planilla, config) {
   for (const [key, lista] of Object.entries(planilla?.turnos || {})) {
     const [canchaId, horarioId] = key.split('__')
     for (const item of lista) {
-      getGroup(nombreDe(item), { nombre: nombreDe(item) }).turnos.push({
-        ...item,
-        canchaId,
-        horarioId,
-        canchaNombre: canchaNombre(canchaId),
-        horario: horarioDe(canchaId, horarioId),
-      })
+      // Un turno de reserva se abre en una línea por pago más lo que falte, cada
+      // una a nombre de quien corresponda: así cada uno ve en su cuenta lo suyo.
+      for (const linea of lineasDeTurno(item)) {
+        getGroup(nombreDe(linea), { nombre: nombreDe(linea) }).turnos.push({
+          ...linea,
+          canchaId,
+          horarioId,
+          canchaNombre: canchaNombre(canchaId),
+          horario: horarioDe(canchaId, horarioId),
+        })
+      }
     }
   }
   for (const c of planilla?.consumos || []) {
@@ -141,9 +152,25 @@ export function aplicarPago(planilla, cuenta, medio, pagado) {
         : { ...item, pagado: false, pago: null }
       : item
 
+  // En un turno de reserva no se marca una línea como pagada: se le agrega un
+  // pago por lo que falta (o se le sacan los pagos de esa persona al revertir),
+  // que es como se cobra desde la planilla.
+  const aplicarTurno = (t) => {
+    if (!tienePagos(t)) return aplicar(t)
+    if (pagado) {
+      const falta = saldoTurno(t)
+      if (!pertenece(t) || falta <= 0) return t
+      return agregarPago(t, { nombre: t.jugador, monto: falta, pago: medio })
+    }
+    const quedan = pagosDe(t).filter(
+      (p) => p.pago !== medio || ((p.nombre || '').trim() || (t.jugador || '').trim()) !== objetivo,
+    )
+    return quedan.length === pagosDe(t).length ? t : { ...t, pagos: quedan }
+  }
+
   const turnos = {}
   for (const [key, lista] of Object.entries(planilla.turnos || {})) {
-    turnos[key] = lista.map(aplicar)
+    turnos[key] = lista.map(aplicarTurno)
   }
   const consumos = (planilla.consumos || []).map(aplicar)
 

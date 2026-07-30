@@ -1,7 +1,16 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { turnoKey, horarioLabel } from '../data/defaults'
+import {
+  agregarPago,
+  esReserva,
+  quitarPago,
+  tienePagos,
+  turnoNuevo,
+  MODO_RESERVA,
+} from '../utils/turnos'
 import { uid, formatMoney } from '../utils/helpers'
 import SlotCell, { MIN_JUGADORES } from './SlotCell'
+import ReservaCell from './ReservaCell'
 
 const freshPlayer = () => ({ id: uid(), jugador: '', monto: '', pagado: false })
 
@@ -104,6 +113,14 @@ export default function CourtsBoard({ config, eje, planilla, update, loading, su
   const removePlayer = (canchaId, horarioId, index) =>
     mutateSlot(turnoKey(canchaId, horarioId), (lista) => lista.filter((_, i) => i !== index))
 
+  // ---- Modo reserva: un turno por celda, con sus pagos encima ----
+  const reserva = esReserva(config)
+  const mutateReserva = (canchaId, horarioId, fn) =>
+    mutateSlot(turnoKey(canchaId, horarioId), (lista) => {
+      const actual = lista[0] || turnoNuevo(MODO_RESERVA)
+      return [fn(actual), ...lista.slice(1)]
+    })
+
   const subtotal = (canchaId, franjas) =>
     franjas.reduce(
       (s, h) =>
@@ -111,17 +128,33 @@ export default function CourtsBoard({ config, eje, planilla, update, loading, su
       0,
     )
 
-  // Una celda de turno (compartida por ambos layouts).
-  const renderSlot = (c, h) => (
+  // Una celda de turno (compartida por ambos layouts). Cómo se muestra lo decide
+  // el turno, no la configuración de hoy: uno anotado como reserva se sigue
+  // viendo con sus pagos aunque el club haya vuelto al modo por jugadores, y al
+  // revés. La config solo manda en los turnos que todavía están vacíos.
+  const renderSlot = (c, h) => {
+    const lista = turnos[turnoKey(c.id, h.id)] || []
+    const comoReserva = lista.length ? tienePagos(lista[0]) : reserva
+    return comoReserva ? (
+      <ReservaCell
+        turno={lista[0] || null}
+        onUpdate={(patch) => mutateReserva(c.id, h.id, (t) => ({ ...t, ...patch }))}
+        onAddPago={(datos) => mutateReserva(c.id, h.id, (t) => agregarPago(t, datos))}
+        onRemovePago={(pagoId) => mutateReserva(c.id, h.id, (t) => quitarPago(t, pagoId))}
+        sugerencias={sugerencias}
+        onCommitNombre={onCommitNombre}
+      />
+    ) : (
     <SlotCell
-      jugadores={turnos[turnoKey(c.id, h.id)] || []}
+      jugadores={lista}
       onAdd={() => addPlayer(c.id, h.id)}
       onUpdate={(index, patch) => updatePlayer(c.id, h.id, index, patch)}
       onRemove={(index) => removePlayer(c.id, h.id, index)}
       sugerencias={sugerencias}
       onCommitNombre={onCommitNombre}
     />
-  )
+    )
+  }
 
   // Cada cancha tiene un ancho mínimo usable: con muchas canchas la planilla se
   // desplaza en horizontal en vez de aplastar los campos hasta hacerlos ilegibles.
