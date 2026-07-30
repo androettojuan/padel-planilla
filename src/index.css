@@ -1340,6 +1340,11 @@ select {
 .consumo__player--mostrador {
   font-style: italic;
 }
+/* "de Juan": de quién es el producto compartido, aunque esta parte no tenga dueño. */
+.consumo__player--ref {
+  font-style: italic;
+  opacity: 0.85;
+}
 /* "1/3": qué parte del producto compartido es esta línea. */
 .consumo__parte {
   margin-left: 5px;

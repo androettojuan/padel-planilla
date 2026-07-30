@@ -119,6 +119,20 @@ export function grupoDe(consumos = [], consumo) {
   return consumos.filter((c) => c.grupoId === consumo.grupoId)
 }
 
+/**
+ * A nombre de quién está el producto compartido: el primero de sus partes que
+ * tenga nombre. Sirve para que las partes sin nombre no queden huérfanas —"esta
+ * cerveza es la de Juan"— aunque cada una se cobre por separado.
+ */
+export function duenioDeGrupo(consumos = [], consumo) {
+  if (!consumo?.grupoId) return ''
+  const grupo = grupoDe(consumos, consumo)
+    .slice()
+    .sort((a, b) => (a.parte?.n || 0) - (b.parte?.n || 0))
+  const conNombre = grupo.find((c) => (c.jugador || '').trim())
+  return conNombre ? conNombre.jugador.trim() : ''
+}
+
 // Jugadores entre los que está dividido el producto, en orden de parte.
 export function jugadoresDe(consumos = [], consumo) {
   return grupoDe(consumos, consumo)
@@ -151,7 +165,7 @@ export function conceptoConsumo(consumo) {
  * jugador como para cambiar entre quiénes se reparte. El precio del producto no
  * cambia: se vuelve a repartir el total del grupo.
  */
-export function redividirConsumo(planilla, consumo, nombres) {
+export function redividirConsumo(planilla, consumo, nombres, partes = 0) {
   const consumos = planilla?.consumos || []
   const grupo = grupoDe(consumos, consumo)
   if (!grupo.length) return planilla
@@ -170,6 +184,7 @@ export function redividirConsumo(planilla, consumo, nombres) {
     },
     nombres,
     consumo.cantidad,
+    partes,
   )
   if (!nuevas.length) return planilla
 

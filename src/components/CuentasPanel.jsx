@@ -10,8 +10,10 @@ import { conceptoConsumo } from '../utils/consumos'
 function etiqueta(cuenta) {
   if (!cuenta.suelto) return cuenta.nombre || SIN_ASIGNAR_LABEL
   const productos = (cuenta.consumos || []).map(conceptoConsumo).join(' · ')
-  if (!cuenta.mostrador) return productos || SIN_ASIGNAR_LABEL
-  return productos ? `${MOSTRADOR_LABEL} · ${productos}` : MOSTRADOR_LABEL
+  if (cuenta.mostrador) return productos ? `${MOSTRADOR_LABEL} · ${productos}` : MOSTRADOR_LABEL
+  if (!productos) return SIN_ASIGNAR_LABEL
+  // "Cerveza (2/3) · de Juan": la parte no tiene dueño, pero el producto sí.
+  return cuenta.referencia ? `${productos} · de ${cuenta.referencia}` : productos
 }
 
 export default function CuentasPanel({ config, planilla, update }) {

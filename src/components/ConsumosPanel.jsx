@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PAGOS_BY_ID } from '../data/defaults'
 import { formatMoney } from '../utils/helpers'
 import {
+  duenioDeGrupo,
   grupoDe,
   jugadoresDe,
   lineaMostrador,
@@ -105,8 +106,8 @@ export default function ConsumosPanel({
     update((prev) => ({ ...prev, consumos: (prev.consumos || []).filter((c) => c.id !== consumo.id) }))
   }
 
-  const dividir = (consumo, nombres) => {
-    update((prev) => redividirConsumo(prev, consumo, nombres))
+  const dividir = (consumo, nombres, partesNuevas) => {
+    update((prev) => redividirConsumo(prev, consumo, nombres, partesNuevas))
     setDividiendo(null)
   }
 
@@ -245,8 +246,16 @@ export default function ConsumosPanel({
                   <span className="consumo__player consumo__player--mostrador">
                     Mostrador · no jugaba
                   </span>
+                ) : c.jugador ? (
+                  <span className="consumo__player">{c.jugador}</span>
                 ) : (
-                  c.jugador && <span className="consumo__player">{c.jugador}</span>
+                  // Una parte sin nombre igual se sabe de quién es: del que tiene
+                  // nombre en el mismo producto compartido.
+                  duenioDeGrupo(todos, c) && (
+                    <span className="consumo__player consumo__player--ref">
+                      de {duenioDeGrupo(todos, c)}
+                    </span>
+                  )
                 )}
               </div>
               <div className="consumo__qty">
@@ -310,7 +319,7 @@ export default function ConsumosPanel({
                   sugerencias={sugerencias}
                   onCommitNombre={onCommitNombre}
                   onCancel={() => setDividiendo(null)}
-                  onConfirm={(nombres) => dividir(c, nombres)}
+                  onConfirm={(nombres, partesNuevas) => dividir(c, nombres, partesNuevas)}
                 />
               )}
             </li>
@@ -324,19 +333,22 @@ export default function ConsumosPanel({
 }
 
 /**
- * Formulario para repartir un consumo ya cargado. Arranca con los jugadores que
- * ya lo comparten y se les suman o quitan otros; al confirmar, el precio del
- * producto se vuelve a dividir en partes iguales entre los que queden.
+ * Formulario para repartir un consumo ya cargado. Se elige entre cuántos va y,
+ * si hace falta, quiénes: el nombre sirve para el que tiene cuenta en el club,
+ * pero al que paga en efectivo o con Mercado Pago no hay por qué pedírselo.
  */
 function DividirForm({ jugadores, precio, sugerencias, onCommitNombre, onCancel, onConfirm }) {
   const [nombres, setNombres] = useState(jugadores)
   const [texto, setTexto] = useState('')
+  const [enCuantas, setEnCuantas] = useState(Math.max(1, jugadores.length))
 
   const lista = nombresUnicos([...nombres, texto])
-  const partes = repartirMonto(precio, Math.max(1, lista.length))
+  // Nunca menos partes que nombres cargados: cada uno tiene que tener la suya.
+  const total = Math.max(enCuantas, lista.length)
+  const montos = repartirMonto(precio, Math.max(1, total))
   // Cuando el precio no se divide justo, las partes difieren en unos pesos y
   // conviene mostrarlas todas en vez de un "cada uno" que sería mentira.
-  const parejo = partes.every((p) => p === partes[0])
+  const parejo = montos.every((p) => p === montos[0])
 
   const sumar = () => {
     const nombre = texto.trim()
@@ -348,16 +360,31 @@ function DividirForm({ jugadores, precio, sugerencias, onCommitNombre, onCancel,
   return (
     <div className="dividir">
       <p className="dividir__head">
-        Dividir {formatMoney(precio)} entre {lista.length}
-        {lista.length > 1 && (
+        Dividir {formatMoney(precio)} entre {total}
+        {total > 1 && (
           <>
             {' · '}
             {parejo
-              ? `${formatMoney(partes[0])} cada uno`
-              : partes.map((p) => formatMoney(p)).join(' · ')}
+              ? `${formatMoney(montos[0])} cada uno`
+              : montos.map((p) => formatMoney(p)).join(' · ')}
           </>
         )}
       </p>
+      <div className="partes">
+        <span className="partes__label">Entre cuántos</span>
+        <button
+          className="qty-btn"
+          onClick={() => setEnCuantas(Math.max(1, total - 1))}
+          disabled={total <= 1 || total <= lista.length}
+          aria-label="Entre menos"
+        >
+          −
+        </button>
+        <span className="qty-value">{total}</span>
+        <button className="qty-btn" onClick={() => setEnCuantas(total + 1)} aria-label="Entre más">
+          +
+        </button>
+      </div>
       <ul className="reparto">
         {nombres.map((n) => (
           <li className="reparto__chip" key={n}>
@@ -375,7 +402,7 @@ function DividirForm({ jugadores, precio, sugerencias, onCommitNombre, onCancel,
       <div className="consumos__row">
         <NombreInput
           className="consumos__player"
-          placeholder="Sumar jugador"
+          placeholder="Sumar jugador (opcional)"
           value={texto}
           sugerencias={sugerencias}
           onChange={setTexto}
@@ -389,8 +416,8 @@ function DividirForm({ jugadores, precio, sugerencias, onCommitNombre, onCancel,
       <div className="dividir__acciones">
         <button
           className="btn btn--primary"
-          onClick={() => onConfirm(lista)}
-          disabled={lista.length === 0}
+          onClick={() => onConfirm(lista, total)}
+          disabled={total < 1}
         >
           Confirmar
         </button>

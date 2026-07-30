@@ -1,5 +1,5 @@
 import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
-import { MOSTRADOR_LABEL } from './consumos'
+import { duenioDeGrupo, MOSTRADOR_LABEL } from './consumos'
 import {
   agregarPago,
   lineasDeTurno,
@@ -51,12 +51,16 @@ export function buildCuentas(planilla, config) {
   // cobrarlos juntos porque no se sabe si son de la misma persona. El resto se
   // junta por jugador, como siempre.
   const suelto = (c) => !nombreDe(c) && (c.mostrador || c.parte?.de > 1)
+  const consumosTodos = planilla?.consumos || []
   const grupoDeConsumo = (c) =>
     suelto(c)
       ? getGroup(`suelto#${c.id}`, {
           nombre: c.mostrador ? MOSTRADOR_LABEL : '',
           mostrador: !!c.mostrador,
           suelto: true,
+          // De quién es el producto compartido, para no perder de vista que esta
+          // parte suelta salió del turno de alguien.
+          referencia: duenioDeGrupo(consumosTodos, c),
         })
       : getGroup(nombreDe(c), { nombre: nombreDe(c) })
 
@@ -93,6 +97,7 @@ export function buildCuentas(planilla, config) {
         nombre: g.nombre,
         mostrador: !!g.mostrador,
         suelto: !!g.suelto,
+        referencia: g.referencia || '',
         turnos: turnosPend,
         consumos: consumosPend,
         totalTurnos,
@@ -120,6 +125,7 @@ export function buildCuentas(planilla, config) {
         nombre: g.nombre,
         mostrador: !!g.mostrador,
         suelto: !!g.suelto,
+        referencia: g.referencia || '',
         turnos: grp.turnos,
         consumos: grp.consumos,
         totalTurnos: tt,
