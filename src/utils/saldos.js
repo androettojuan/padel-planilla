@@ -1,33 +1,22 @@
 import { normalizeNombre } from './helpers'
-import { conceptoConsumo, nombreConsumo } from './consumos'
-import { lineasDeTurno } from './turnos'
+import { lineasDePlanilla } from './planilla'
 
 // Recorre todas las planillas y junta las líneas cobradas como "Anotado" (es
-// decir, fiadas): turnos, consumos y consumos de mostrador. Devuelve un cargo
-// por línea, con la persona normalizada para poder agrupar.
+// decir, fiadas). Devuelve un cargo por línea, con la persona normalizada para
+// poder agrupar.
 export function cargosFiado(planillas) {
   const out = []
-  const push = (dateKey, monto, pagado, pago, nombre, concepto) => {
-    if (!(monto > 0)) return
-    if (!pagado || pago !== 'anotado') return
-    const disp = (nombre || '').trim() || 'Sin nombre'
-    out.push({ dateKey, monto, nombre: disp, nombreKey: normalizeNombre(disp), concepto })
-  }
   for (const { dateKey, data } of planillas) {
-    for (const lista of Object.values(data?.turnos || {})) {
-      for (const t of lista) {
-        for (const l of lineasDeTurno(t)) push(dateKey, l.monto, l.pagado, l.pago, l.jugador, 'Turno')
-      }
-    }
-    for (const c of data?.consumos || []) {
-      const sub = (Number(c.precio) || 0) * (Number(c.cantidad) || 0)
-      push(dateKey, sub, c.pagado, c.pago, nombreConsumo(c), conceptoConsumo(c))
-    }
-    for (const tab of data?.mostrador || []) {
-      for (const it of tab.items || []) {
-        const sub = (Number(it.precio) || 0) * (Number(it.cantidad) || 0)
-        push(dateKey, sub, tab.pagado, tab.pago, tab.nombre, it.nombre)
-      }
+    for (const l of lineasDePlanilla(data)) {
+      if (!(l.monto > 0) || !l.pagado || l.pago !== 'anotado') continue
+      const nombre = (l.nombre || '').trim() || 'Sin nombre'
+      out.push({
+        dateKey,
+        monto: l.monto,
+        nombre,
+        nombreKey: normalizeNombre(nombre),
+        concepto: l.concepto,
+      })
     }
   }
   return out

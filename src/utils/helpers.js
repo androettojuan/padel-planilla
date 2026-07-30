@@ -115,6 +115,19 @@ export function shiftMonth(monthKey, delta) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
+/**
+ * Rango de texto que cubre un mes ("YYYY-MM") sobre claves "YYYY-MM-DD".
+ *
+ * El cierre usa el escape \uf8ff, más alto que cualquier carácter que pueda
+ * seguir: cerrar en "2026-07-" a secas da un rango invertido —como texto es
+ * MENOR que "2026-07-01"— y la consulta vuelve vacía. Cerrar en "-31" tampoco
+ * sirve para claves con algo más atrás del día.
+ */
+export const rangoMes = (monthKey) => [`${monthKey}-01`, `${monthKey}-\uf8ff`]
+
+// Deja solo dígitos: lo que se escribe en los campos de plata y cantidades.
+export const soloDigitos = (valor) => String(valor ?? '').replace(/[^\d]/g, '')
+
 export function shiftDateKey(dateKey, days) {
   const [y, m, d] = dateKey.split('-').map(Number)
   const date = new Date(y, m - 1, d)

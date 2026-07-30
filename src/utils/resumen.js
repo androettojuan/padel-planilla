@@ -1,19 +1,13 @@
-// Agrega todas las planillas de un mes en dos miradas distintas de la misma
-// actividad, que antes venían mezcladas y se pisaban entre sí:
-//
-//   FACTURADO — lo que se vendió este mes, cobrado o no: contado, mercado,
-//     anotado (lo que quedó fiado) y pendiente. `total` es la suma.
-//   CAJA — la plata que efectivamente entró este mes: lo cobrado en el momento
-//     (contado + mercado) más los pagos de fiados, que pueden ser de deudas de
-//     meses anteriores.
+// Agrega todas las planillas de un mes: lo que se vendió, cobrado o no —contado,
+// mercado, anotado (lo que quedó fiado) y pendiente—, más los pagos de fiado que
+// entraron en el mes, que se informan aparte.
 //
 // Un pago de fiado NO se resta del anotado del mes. Antes sí, y por eso el
 // anotado podía quedar en $0 o en negativo mientras su propio detalle listaba
 // cargos: dos números que se contradecían. Ahora cada cosa se cuenta una sola vez
 // y en un solo lugar.
 
-import { conceptoConsumo, nombreConsumo } from './consumos'
-import { lineasDeTurno } from './turnos'
+import { lineasDePlanilla } from './planilla'
 
 const PAGO_IDS = ['contado', 'mercado', 'anotado']
 
@@ -35,7 +29,7 @@ export function resumenMensual(planillas, fiadoPagos = []) {
     return porDiaMap.get(dateKey)
   }
 
-  const registrar = (dateKey, monto, pagado, pago, nombre, concepto) => {
+  const registrar = (dateKey, { monto, pagado, pago, nombre, concepto }) => {
     if (!(monto > 0)) return
     const d = dia(dateKey)
     acc.total += monto
@@ -53,30 +47,16 @@ export function resumenMensual(planillas, fiadoPagos = []) {
   }
 
   for (const { dateKey, data } of planillas) {
-    for (const lista of Object.values(data?.turnos || {})) {
-      for (const t of lista) {
-        for (const l of lineasDeTurno(t)) {
-          registrar(dateKey, l.monto, l.pagado, l.pago, l.jugador, 'Turno')
-        }
-      }
-    }
-    for (const c of data?.consumos || []) {
-      const cantidad = Number(c.cantidad) || 0
-      const sub = (Number(c.precio) || 0) * cantidad
-      registrar(dateKey, sub, c.pagado, c.pago, nombreConsumo(c), conceptoConsumo(c))
-      if (sub > 0) {
-        consumos.venta += sub
-        const costo = (Number(c.costo) || 0) * cantidad
-        consumos.costo += costo
-        if (c.costo === undefined || c.costo === null) consumos.sinCosto += sub
-        else consumos.conCosto += sub
-      }
-    }
-    for (const tab of data?.mostrador || []) {
-      for (const it of tab.items || []) {
-        const sub = (Number(it.precio) || 0) * (Number(it.cantidad) || 0)
-        registrar(dateKey, sub, tab.pagado, tab.pago, tab.nombre, it.nombre)
-      }
+    for (const linea of lineasDePlanilla(data)) {
+      registrar(dateKey, linea)
+      // Lo vendido en mercadería y lo que costó, para la ganancia del mes. Las
+      // cuentas viejas de mostrador no traen costo y quedan afuera.
+      const c = linea.consumo
+      if (!c || !(linea.monto > 0)) continue
+      consumos.venta += linea.monto
+      consumos.costo += (Number(c.costo) || 0) * (Number(c.cantidad) || 0)
+      if (c.costo === undefined || c.costo === null) consumos.sinCosto += linea.monto
+      else consumos.conCosto += linea.monto
     }
   }
 
@@ -108,15 +88,6 @@ export function resumenMensual(planillas, fiadoPagos = []) {
 
   return {
     ...acc,
-    // Lo que se cobró en el momento de vender (sin los fiados).
-    cobrado: acc.contado + acc.mercado,
-    // Plata que entró este mes, incluidos los fiados que pagaron.
-    caja: {
-      contado: acc.contado + fiadoCobrado.contado,
-      mercado: acc.mercado + fiadoCobrado.mercado,
-      fiado: fiadoCobrado.total,
-      total: acc.contado + acc.mercado + fiadoCobrado.total,
-    },
     porDia,
     anotadoDetalle,
     fiadoCobrado,

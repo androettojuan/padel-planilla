@@ -93,11 +93,23 @@ export function lineasConsumo(
 }
 
 /**
+ * Líneas de un consumo recién cargado, que es donde se decide qué clase de venta
+ * es: sin nombres y sin dividir, quien se lo llevó no estaba jugando, así que va
+ * como venta de mostrador. Con nombres o partido, son líneas de consumo normales.
+ */
+export function lineasNuevoConsumo(base, nombres, cantidad = 1, partes = 0) {
+  const lista = nombresUnicos(nombres)
+  const total = Math.max(lista.length, Math.floor(Number(partes) || 0))
+  if (!lista.length && total <= 1) return [lineaMostrador(base, cantidad)]
+  return lineasConsumo(base, lista, cantidad, total)
+}
+
+/**
  * Consumo de alguien que no estaba jugando: una venta suelta del mostrador. Va
  * sin jugador a propósito y marcado con `mostrador`, para distinguirlo de un
  * consumo al que le falta el nombre. Cada uno se cobra por separado.
  */
-export function lineaMostrador({ productoId, nombre, precio, costo = 0 }, cantidad = 1) {
+function lineaMostrador({ productoId, nombre, precio, costo = 0 }, cantidad = 1) {
   return {
     id: uid(),
     jugador: '',
@@ -112,7 +124,8 @@ export function lineaMostrador({ productoId, nombre, precio, costo = 0 }, cantid
 }
 
 // Las líneas que comparten la división de un mismo producto. Una línea sin
-// dividir es un grupo de uno.
+// dividir es un grupo de uno. Recorre la lista entera, así que conviene pedirlo
+// una vez por consumo y derivar de ahí lo demás (jugadores, dueño, precio).
 export function grupoDe(consumos = [], consumo) {
   if (!consumo) return []
   if (!consumo.grupoId) return [consumo]
@@ -120,31 +133,36 @@ export function grupoDe(consumos = [], consumo) {
 }
 
 /**
+ * Un consumo "suelto" es el que no tiene a quién cobrarle por nombre: una venta
+ * de mostrador, o la parte de algo dividido sin decir entre quiénes. Cada uno se
+ * cobra por su lado, porque nadie sabe si son de la misma persona.
+ */
+export const esConsumoSuelto = (consumo) =>
+  !(consumo?.jugador || '').trim() && (!!consumo?.mostrador || consumo?.parte?.de > 1)
+
+// Las partes de un producto compartido en el orden en que se dividió.
+const ordenarPartes = (grupo) =>
+  grupo.slice().sort((a, b) => (a.parte?.n || 0) - (b.parte?.n || 0))
+
+// Jugadores entre los que está dividido el producto, en orden de parte.
+export const jugadoresDeGrupo = (grupo = []) => ordenarPartes(grupo).map((c) => c.jugador)
+
+/**
  * A nombre de quién está el producto compartido: el primero de sus partes que
  * tenga nombre. Sirve para que las partes sin nombre no queden huérfanas —"esta
  * cerveza es la de Juan"— aunque cada una se cobre por separado.
  */
-export function duenioDeGrupo(consumos = [], consumo) {
-  if (!consumo?.grupoId) return ''
-  const grupo = grupoDe(consumos, consumo)
-    .slice()
-    .sort((a, b) => (a.parte?.n || 0) - (b.parte?.n || 0))
-  const conNombre = grupo.find((c) => (c.jugador || '').trim())
-  return conNombre ? conNombre.jugador.trim() : ''
-}
-
-// Jugadores entre los que está dividido el producto, en orden de parte.
-export function jugadoresDe(consumos = [], consumo) {
-  return grupoDe(consumos, consumo)
-    .slice()
-    .sort((a, b) => (a.parte?.n || 0) - (b.parte?.n || 0))
-    .map((c) => c.jugador)
-}
+export const duenioDeGrupo = (grupo = []) =>
+  (jugadoresDeGrupo(grupo).find((n) => (n || '').trim()) || '').trim()
 
 // Precio unitario del producto entero: la suma de las partes del grupo.
-export function precioOriginal(consumos = [], consumo) {
-  return grupoDe(consumos, consumo).reduce((s, c) => s + (Number(c.precio) || 0), 0)
-}
+export const precioDeGrupo = (grupo = []) =>
+  grupo.reduce((s, c) => s + (Number(c.precio) || 0), 0)
+
+// Costo con el que entró la mercadería del producto entero, repartido igual que
+// el precio entre sus partes.
+export const costoDeGrupo = (grupo = []) =>
+  grupo.reduce((s, c) => s + (Number(c.costo) || 0), 0)
 
 // Nombre que lleva el consumo en el resumen del mes y en el detalle de fiado.
 export function nombreConsumo(consumo) {
@@ -177,10 +195,10 @@ export function redividirConsumo(planilla, consumo, nombres, partes = 0) {
     {
       productoId: consumo.productoId,
       nombre: consumo.nombre,
-      precio: grupo.reduce((s, c) => s + (Number(c.precio) || 0), 0),
+      precio: precioDeGrupo(grupo),
       // El costo con el que entró la mercadería se conserva: es el del día en que
       // se cargó la venta, no el de la última compra.
-      costo: grupo.reduce((s, c) => s + (Number(c.costo) || 0), 0),
+      costo: costoDeGrupo(grupo),
     },
     nombres,
     consumo.cantidad,

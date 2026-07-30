@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { PAGOS, PAGOS_BY_ID } from '../data/defaults'
 import { formatMoney } from '../utils/helpers'
-import { buildCuentas, aplicarPago, SIN_ASIGNAR_LABEL, MOSTRADOR_LABEL } from '../utils/cuentas'
-import { conceptoConsumo } from '../utils/consumos'
+import { buildCuentas, aplicarPago, SIN_ASIGNAR_LABEL } from '../utils/cuentas'
+import { conceptoConsumo, MOSTRADOR_LABEL } from '../utils/consumos'
 
 // Cómo se titula la cuenta. Las de un jugador llevan su nombre; las sueltas —una
 // venta de mostrador, o la parte de algo dividido sin nombres— se distinguen por

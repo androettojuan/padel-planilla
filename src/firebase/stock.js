@@ -1,5 +1,6 @@
 import {
   setDoc,
+  updateDoc,
   deleteDoc,
   onSnapshot,
   getDocs,
@@ -11,8 +12,8 @@ import {
   limit as fbLimit,
 } from 'firebase/firestore'
 import { isFirebaseConfigured } from './config'
-import { clubCol, clubDoc, lsKey } from './paths'
-import { uid } from '../utils/helpers'
+import { clubCol, clubDoc, readLocal, writeLocal } from './paths'
+import { rangoMes, uid } from '../utils/helpers'
 
 // ---------------------------------------------------------------------------
 // Stock del club. Dos colecciones bajo clubs/{clubId}:
@@ -27,16 +28,17 @@ import { uid } from '../utils/helpers'
 // descontar dos unidades, no una.
 // ---------------------------------------------------------------------------
 
-const readLocal = (clubId, col, fallback) => {
-  try {
-    const raw = localStorage.getItem(lsKey(clubId, col))
-    return raw ? JSON.parse(raw) : fallback
-  } catch {
-    return fallback
-  }
+const PRODUCTO_VACIO = { cantidad: 0, costo: 0, minimo: 0 }
+
+// Espejo local del stock (modo demo): aplica `cambios` sobre un producto,
+// creándolo si es la primera vez que se lo toca. `cambios` puede ser una función
+// que recibe lo que había, para los movimientos relativos.
+function patchLocal(clubId, productoId, cambios) {
+  const stock = readLocal(clubId, 'stock', {})
+  const actual = stock[productoId] || PRODUCTO_VACIO
+  stock[productoId] = { ...actual, ...(typeof cambios === 'function' ? cambios(actual) : cambios) }
+  writeLocal(clubId, 'stock', stock)
 }
-const writeLocal = (clubId, col, value) =>
-  localStorage.setItem(lsKey(clubId, col), JSON.stringify(value))
 
 // Suscripción al stock del club como objeto { [productoId]: {...} }.
 export function subscribeStock(clubId, onData, onError) {
@@ -59,31 +61,44 @@ export function subscribeStock(clubId, onData, onError) {
 
 /**
  * Registra una compra: suma al stock, deja el costo unitario como costo actual
- * del producto y guarda el movimiento en el historial.
+ * del producto y guarda el movimiento en el historial. Devuelve la compra
+ * cargada, para que la pantalla la agregue a la lista sin volver a leerla.
  */
 export async function registrarCompra(clubId, { productoId, nombre, cantidad, costo, fecha }) {
   const unidades = Math.max(0, Math.round(Number(cantidad) || 0))
   const costoUnit = Math.max(0, Math.round(Number(costo) || 0))
-  if (!productoId || unidades <= 0) return
+  if (!productoId || unidades <= 0) return null
 
-  const compra = { id: uid(), productoId, nombre, cantidad: unidades, costo: costoUnit, fecha }
-
-  if (!isFirebaseConfigured) {
-    const stock = readLocal(clubId, 'stock', {})
-    const actual = stock[productoId] || { cantidad: 0, costo: 0, minimo: 0 }
-    stock[productoId] = { ...actual, cantidad: (Number(actual.cantidad) || 0) + unidades, costo: costoUnit }
-    writeLocal(clubId, 'stock', stock)
-    writeLocal(clubId, 'stockCompras', [...readLocal(clubId, 'stockCompras', []), compra])
-    return
+  const compra = {
+    id: uid(),
+    productoId,
+    nombre,
+    cantidad: unidades,
+    costo: costoUnit,
+    fecha,
+    ts: Date.now(),
   }
 
-  await setDoc(
-    clubDoc(clubId, 'stock', productoId),
-    { cantidad: increment(unidades), costo: costoUnit, actualizado: Date.now() },
-    { merge: true },
-  )
+  if (!isFirebaseConfigured) {
+    patchLocal(clubId, productoId, (actual) => ({
+      cantidad: (Number(actual.cantidad) || 0) + unidades,
+      costo: costoUnit,
+    }))
+    writeLocal(clubId, 'stockCompras', [...readLocal(clubId, 'stockCompras', []), compra])
+    return compra
+  }
+
+  // Son dos documentos independientes: van juntos y no uno después del otro.
   const { id, ...data } = compra
-  await setDoc(clubDoc(clubId, 'stockCompras', id), { ...data, ts: Date.now() })
+  await Promise.all([
+    setDoc(
+      clubDoc(clubId, 'stock', productoId),
+      { cantidad: increment(unidades), costo: costoUnit, actualizado: Date.now() },
+      { merge: true },
+    ),
+    setDoc(clubDoc(clubId, 'stockCompras', id), data),
+  ])
+  return compra
 }
 
 /**
@@ -94,10 +109,7 @@ export async function ajustarStock(clubId, productoId, cantidad) {
   const unidades = Math.max(0, Math.round(Number(cantidad) || 0))
   if (!productoId) return
   if (!isFirebaseConfigured) {
-    const stock = readLocal(clubId, 'stock', {})
-    const actual = stock[productoId] || { cantidad: 0, costo: 0, minimo: 0 }
-    stock[productoId] = { ...actual, cantidad: unidades }
-    writeLocal(clubId, 'stock', stock)
+    patchLocal(clubId, productoId, { cantidad: unidades })
     return
   }
   await setDoc(
@@ -112,10 +124,7 @@ export async function guardarMinimo(clubId, productoId, minimo) {
   const min = Math.max(0, Math.round(Number(minimo) || 0))
   if (!productoId) return
   if (!isFirebaseConfigured) {
-    const stock = readLocal(clubId, 'stock', {})
-    const actual = stock[productoId] || { cantidad: 0, costo: 0, minimo: 0 }
-    stock[productoId] = { ...actual, minimo: min }
-    writeLocal(clubId, 'stock', stock)
+    patchLocal(clubId, productoId, { minimo: min })
     return
   }
   await setDoc(clubDoc(clubId, 'stock', productoId), { minimo: min }, { merge: true })
@@ -126,12 +135,15 @@ export async function guardarMinimo(clubId, productoId, minimo) {
  * consumo, positivo al darlo de baja. Solo afecta a los productos que ya están
  * bajo control de stock; los demás se venden sin descontar.
  *
+ * Quién está bajo control lo decide el propio dato: se usa `updateDoc`, que falla
+ * si el producto no tiene documento de stock, en vez de `setDoc(merge)`, que lo
+ * crearía con cantidad negativa. Así el que llama no tiene que pasar la lista de
+ * productos controlados ni quedar desactualizado respecto de la base.
+ *
  * `deltas` es { [productoId]: unidades }.
  */
-export async function moverStock(clubId, deltas, controlados) {
-  const entries = Object.entries(deltas || {}).filter(
-    ([productoId, delta]) => delta && (!controlados || controlados.has(productoId)),
-  )
+export async function moverStock(clubId, deltas) {
+  const entries = Object.entries(deltas || {}).filter(([, delta]) => delta)
   if (!entries.length) return
 
   if (!isFirebaseConfigured) {
@@ -147,11 +159,13 @@ export async function moverStock(clubId, deltas, controlados) {
 
   await Promise.all(
     entries.map(([productoId, delta]) =>
-      setDoc(
-        clubDoc(clubId, 'stock', productoId),
-        { cantidad: increment(delta), actualizado: Date.now() },
-        { merge: true },
-      ),
+      updateDoc(clubDoc(clubId, 'stock', productoId), {
+        cantidad: increment(delta),
+        actualizado: Date.now(),
+      }).catch((err) => {
+        // El producto no se controla: se vende sin descontar, no es un error.
+        if (err?.code !== 'not-found') throw err
+      }),
     ),
   )
 }
@@ -169,11 +183,7 @@ async function recalcularCosto(clubId, productoId) {
   if (!isFirebaseConfigured) {
     const compras = readLocal(clubId, 'stockCompras', []).filter((c) => c.productoId === productoId)
     const ultima = compras.sort((a, b) => (b.ts || 0) - (a.ts || 0))[0]
-    const stock = readLocal(clubId, 'stock', {})
-    if (stock[productoId]) {
-      stock[productoId] = { ...stock[productoId], costo: ultima ? Number(ultima.costo) || 0 : 0 }
-      writeLocal(clubId, 'stock', stock)
-    }
+    patchLocal(clubId, productoId, { costo: ultima ? Number(ultima.costo) || 0 : 0 })
     return
   }
   const snap = await getDocs(query(clubCol(clubId, 'stockCompras'), where('productoId', '==', productoId)))
@@ -187,14 +197,9 @@ async function recalcularCosto(clubId, productoId) {
 async function moverSinNegativos(clubId, productoId, delta) {
   if (!delta) return
   if (!isFirebaseConfigured) {
-    const stock = readLocal(clubId, 'stock', {})
-    const actual = stock[productoId]
-    if (!actual) return
-    stock[productoId] = {
-      ...actual,
+    patchLocal(clubId, productoId, (actual) => ({
       cantidad: Math.max(0, (Number(actual.cantidad) || 0) + delta),
-    }
-    writeLocal(clubId, 'stock', stock)
+    }))
     return
   }
   const ref = clubDoc(clubId, 'stock', productoId)
@@ -222,19 +227,24 @@ export async function editarCompra(clubId, compra, { cantidad, costo }) {
   if (!compra?.id || !compra.productoId || unidades <= 0) return
   const delta = unidades - (Number(compra.cantidad) || 0)
 
-  if (!isFirebaseConfigured) {
-    const compras = readLocal(clubId, 'stockCompras', []).map((c) =>
-      c.id === compra.id ? { ...c, cantidad: unidades, costo: costoUnit } : c,
-    )
-    writeLocal(clubId, 'stockCompras', compras)
-  } else {
-    await setDoc(
-      clubDoc(clubId, 'stockCompras', compra.id),
-      { cantidad: unidades, costo: costoUnit },
-      { merge: true },
-    )
-  }
-  await moverSinNegativos(clubId, compra.productoId, delta)
+  // La compra y el stock son documentos distintos: se escriben a la vez. El costo
+  // se recalcula después, porque necesita el historial ya corregido.
+  await Promise.all([
+    isFirebaseConfigured
+      ? setDoc(
+          clubDoc(clubId, 'stockCompras', compra.id),
+          { cantidad: unidades, costo: costoUnit },
+          { merge: true },
+        )
+      : writeLocal(
+          clubId,
+          'stockCompras',
+          readLocal(clubId, 'stockCompras', []).map((c) =>
+            c.id === compra.id ? { ...c, cantidad: unidades, costo: costoUnit } : c,
+          ),
+        ),
+    moverSinNegativos(clubId, compra.productoId, delta),
+  ])
   await recalcularCosto(clubId, compra.productoId)
 }
 
@@ -244,16 +254,16 @@ export async function editarCompra(clubId, compra, { cantidad, costo }) {
  */
 export async function deshacerCompra(clubId, compra) {
   if (!compra?.id || !compra.productoId) return
-  if (!isFirebaseConfigured) {
-    writeLocal(
-      clubId,
-      'stockCompras',
-      readLocal(clubId, 'stockCompras', []).filter((c) => c.id !== compra.id),
-    )
-  } else {
-    await deleteDoc(clubDoc(clubId, 'stockCompras', compra.id))
-  }
-  await moverSinNegativos(clubId, compra.productoId, -(Number(compra.cantidad) || 0))
+  await Promise.all([
+    isFirebaseConfigured
+      ? deleteDoc(clubDoc(clubId, 'stockCompras', compra.id))
+      : writeLocal(
+          clubId,
+          'stockCompras',
+          readLocal(clubId, 'stockCompras', []).filter((c) => c.id !== compra.id),
+        ),
+    moverSinNegativos(clubId, compra.productoId, -(Number(compra.cantidad) || 0)),
+  ])
   await recalcularCosto(clubId, compra.productoId)
 }
 
@@ -263,8 +273,7 @@ export async function deshacerCompra(clubId, compra) {
  * que al ser un solo campo no necesita índice compuesto.
  */
 export async function loadComprasMes(clubId, monthKey) {
-  const desde = `${monthKey}-01`
-  const hasta = `${monthKey}-31`
+  const [desde, hasta] = rangoMes(monthKey)
   if (!isFirebaseConfigured) {
     return readLocal(clubId, 'stockCompras', []).filter(
       (c) => (c.fecha || '') >= desde && (c.fecha || '') <= hasta,

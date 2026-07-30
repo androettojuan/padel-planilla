@@ -1,5 +1,5 @@
 import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
-import { duenioDeGrupo, MOSTRADOR_LABEL } from './consumos'
+import { duenioDeGrupo, esConsumoSuelto, grupoDe, MOSTRADOR_LABEL } from './consumos'
 import {
   agregarPago,
   lineasDeTurno,
@@ -11,8 +11,6 @@ import {
 // Nombre que agrupa las líneas sin jugador asignado.
 export const SIN_ASIGNAR = ''
 export const SIN_ASIGNAR_LABEL = 'Sin asignar'
-// Consumo de alguien que no estaba jugando (una venta suelta del bar).
-export { MOSTRADOR_LABEL }
 
 const nombreDe = (item) => (item?.jugador || '').trim()
 
@@ -50,17 +48,16 @@ export function buildCuentas(planilla, config) {
   // sin decir entre quiénes— van cada uno en su propia cuenta: nadie puede
   // cobrarlos juntos porque no se sabe si son de la misma persona. El resto se
   // junta por jugador, como siempre.
-  const suelto = (c) => !nombreDe(c) && (c.mostrador || c.parte?.de > 1)
   const consumosTodos = planilla?.consumos || []
   const grupoDeConsumo = (c) =>
-    suelto(c)
+    esConsumoSuelto(c)
       ? getGroup(`suelto#${c.id}`, {
           nombre: c.mostrador ? MOSTRADOR_LABEL : '',
           mostrador: !!c.mostrador,
           suelto: true,
           // De quién es el producto compartido, para no perder de vista que esta
           // parte suelta salió del turno de alguien.
-          referencia: duenioDeGrupo(consumosTodos, c),
+          referencia: duenioDeGrupo(grupoDe(consumosTodos, c)),
         })
       : getGroup(nombreDe(c), { nombre: nombreDe(c) })
 
@@ -86,6 +83,15 @@ export function buildCuentas(planilla, config) {
 
   const cuentas = []
   for (const g of groups.values()) {
+    // Lo que identifica a la cuenta, igual para la pendiente y las ya cobradas.
+    const quien = {
+      key: g.key,
+      nombre: g.nombre,
+      mostrador: !!g.mostrador,
+      suelto: !!g.suelto,
+      referencia: g.referencia || '',
+    }
+
     // Cuenta pendiente: lo que todavía no se cobró del jugador.
     const turnosPend = g.turnos.filter((t) => !t.pagado)
     const consumosPend = g.consumos.filter((c) => !c.pagado)
@@ -93,11 +99,7 @@ export function buildCuentas(planilla, config) {
     const totalConsumos = sumConsumos(consumosPend)
     if (totalTurnos + totalConsumos > 0 || consumosPend.length > 0) {
       cuentas.push({
-        key: g.key,
-        nombre: g.nombre,
-        mostrador: !!g.mostrador,
-        suelto: !!g.suelto,
-        referencia: g.referencia || '',
+        ...quien,
         turnos: turnosPend,
         consumos: consumosPend,
         totalTurnos,
@@ -121,11 +123,7 @@ export function buildCuentas(planilla, config) {
       const tt = sumTurnos(grp.turnos)
       const tc = sumConsumos(grp.consumos)
       cuentas.push({
-        key: g.key,
-        nombre: g.nombre,
-        mostrador: !!g.mostrador,
-        suelto: !!g.suelto,
-        referencia: g.referencia || '',
+        ...quien,
         turnos: grp.turnos,
         consumos: grp.consumos,
         totalTurnos: tt,
@@ -153,14 +151,12 @@ export function buildCuentas(planilla, config) {
 export function aplicarPago(planilla, cuenta, medio, pagado) {
   const objetivo = (cuenta?.nombre || '').trim()
   const idsSueltos = new Set((cuenta?.consumos || []).map((c) => c.id))
-  const esSuelto = (item) => !!item?.mostrador || item?.parte?.de > 1
   const pertenece = cuenta?.suelto
-    ? (item) => esSuelto(item) && !(item.jugador || '').trim() && idsSueltos.has(item.id)
-    : // Sin esto, la cuenta "Sin asignar" (jugador vacío) se llevaría también los
-      // consumos sueltos, que no tienen nombre a propósito y se cobran uno a uno.
-      (item) =>
-        !(esSuelto(item) && !(item.jugador || '').trim()) &&
-        (item?.jugador || '').trim() === objetivo
+    ? (item) => esConsumoSuelto(item) && idsSueltos.has(item.id)
+    : // Los consumos sueltos quedan afuera de las cuentas por nombre: sin esto, la
+      // de "Sin asignar" (jugador vacío) se llevaría también los que no tienen
+      // nombre a propósito y se cobran uno a uno.
+      (item) => !esConsumoSuelto(item) && nombreDe(item) === objetivo
   const afecta = pagado
     ? (item) => pertenece(item) && !item.pagado
     : (item) => pertenece(item) && item.pagado && item.pago === medio

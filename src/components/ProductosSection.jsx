@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { uid } from '../utils/helpers'
+import { soloDigitos, uid } from '../utils/helpers'
 import BotonBorrar from './BotonBorrar'
+
+// Lista vacía compartida: un `[]` nuevo en cada render sería una identidad
+// distinta para el efecto de abajo, que volvería a correr sin parar.
+const SIN_PRODUCTOS = []
 
 /**
  * Productos del club: nombre y precio de venta. Vive en la sección de Stock
@@ -10,7 +14,7 @@ import BotonBorrar from './BotonBorrar'
  * hay un botón "Guardar" que compita con el resto de la pantalla, que también
  * guarda al instante.
  */
-export default function ProductosSection({ productos = [], onGuardar }) {
+export default function ProductosSection({ productos = SIN_PRODUCTOS, onGuardar }) {
   const [lista, setLista] = useState(productos)
   const [nuevoId, setNuevoId] = useState(null)
 
@@ -72,7 +76,7 @@ export default function ProductosSection({ productos = [], onGuardar }) {
             inputMode="numeric"
             placeholder="$"
             value={p.precio}
-            onChange={(e) => patch(p.id, { precio: e.target.value.replace(/[^\d]/g, '') })}
+            onChange={(e) => patch(p.id, { precio: soloDigitos(e.target.value) })}
             onBlur={() => guardar(lista)}
           />
           <BotonBorrar onConfirm={() => borrar(p.id)} title="Quitar producto" />

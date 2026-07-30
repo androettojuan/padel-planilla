@@ -10,8 +10,9 @@ import {
   documentId,
 } from 'firebase/firestore'
 import { isFirebaseConfigured } from './config'
-import { clubCol, clubDoc, lsKey } from './paths'
+import { clubCol, clubDoc, lsKey, readLocal, writeLocal } from './paths'
 import { DEFAULT_CONFIG, emptyPlanilla } from '../data/defaults'
+import { rangoMes } from '../utils/helpers'
 
 // Todas las funciones reciben el club activo: no hay estado global de club, así
 // que es imposible leer o escribir en el club equivocado por descuido.
@@ -23,12 +24,7 @@ import { DEFAULT_CONFIG, emptyPlanilla } from '../data/defaults'
 // ---------------------------------------------------------------------------
 export async function loadConfig(clubId) {
   if (!isFirebaseConfigured) {
-    try {
-      const raw = localStorage.getItem(lsKey(clubId, 'config'))
-      return raw ? { ...DEFAULT_CONFIG, ...JSON.parse(raw) } : DEFAULT_CONFIG
-    } catch {
-      return DEFAULT_CONFIG
-    }
+    return { ...DEFAULT_CONFIG, ...readLocal(clubId, 'config', null) }
   }
   const ref = clubDoc(clubId, 'config', 'club')
   const snap = await getDoc(ref)
@@ -41,7 +37,7 @@ export async function loadConfig(clubId) {
 
 export async function saveConfig(clubId, config) {
   if (!isFirebaseConfigured) {
-    localStorage.setItem(lsKey(clubId, 'config'), JSON.stringify(config))
+    writeLocal(clubId, 'config', config)
     return
   }
   await setDoc(clubDoc(clubId, 'config', 'club'), config, { merge: false })
@@ -50,18 +46,13 @@ export async function saveConfig(clubId, config) {
 // ---------------------------------------------------------------------------
 // Planilla por día. Documento: clubs/{clubId}/planillas/{YYYY-MM-DD}
 // ---------------------------------------------------------------------------
-const planillaKey = (clubId, dateKey) => lsKey(clubId, `planilla:${dateKey}`)
+const planillaName = (dateKey) => `planilla:${dateKey}`
 const planillaPrefix = (clubId) => lsKey(clubId, 'planilla:')
 
 export function subscribePlanilla(clubId, dateKey, onData, onError) {
   if (!isFirebaseConfigured) {
     // Modo demo: leemos de localStorage una sola vez.
-    try {
-      const raw = localStorage.getItem(planillaKey(clubId, dateKey))
-      onData(raw ? JSON.parse(raw) : emptyPlanilla())
-    } catch {
-      onData(emptyPlanilla())
-    }
+    onData({ ...emptyPlanilla(), ...readLocal(clubId, planillaName(dateKey), null) })
     return () => {}
   }
   const ref = clubDoc(clubId, 'planillas', dateKey)
@@ -74,7 +65,7 @@ export function subscribePlanilla(clubId, dateKey, onData, onError) {
 
 export async function savePlanilla(clubId, dateKey, planilla) {
   if (!isFirebaseConfigured) {
-    localStorage.setItem(planillaKey(clubId, dateKey), JSON.stringify(planilla))
+    writeLocal(clubId, planillaName(dateKey), planilla)
     return
   }
   await setDoc(clubDoc(clubId, 'planillas', dateKey), planilla, { merge: false })
@@ -104,15 +95,8 @@ function readLocalPlanillas(clubId, desde = '') {
 export async function loadMonth(clubId, monthKey) {
   if (!isFirebaseConfigured) return readLocalPlanillas(clubId, monthKey)
   // Los doc id son "YYYY-MM-DD"; filtramos por rango sobre el id del documento.
-  // El cierre usa el escape \uf8ff, más alto que cualquier dígito: cerrar en
-  // "2026-07-" a secas daba un rango invertido —como texto es MENOR que
-  // "2026-07-01"— y el mes salía siempre vacío.
-  const q = query(
-    clubCol(clubId, 'planillas'),
-    orderBy(documentId()),
-    startAt(`${monthKey}-01`),
-    endAt(`${monthKey}-\uf8ff`),
-  )
+  const [desde, hasta] = rangoMes(monthKey)
+  const q = query(clubCol(clubId, 'planillas'), orderBy(documentId()), startAt(desde), endAt(hasta))
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ dateKey: d.id, data: d.data() }))
 }

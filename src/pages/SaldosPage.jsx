@@ -12,8 +12,16 @@ import {
 import { buildSaldos, aplicarPagosFIFO } from '../utils/saldos'
 import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
-import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
+import {
+  uid,
+  formatMoney,
+  formatDateNumeric,
+  todayKey,
+  normalizeNombre,
+  soloDigitos,
+} from '../utils/helpers'
 import { useClubId } from '../hooks/useClub'
+import BotonBorrar from '../components/BotonBorrar'
 import NombreInput from '../components/NombreInput'
 
 // Medios con los que se puede saldar un fiado (todos menos "Anotado", que es
@@ -37,7 +45,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
   const [monto, setMonto] = useState('')
   const [verSaldados, setVerSaldados] = useState(false)
   const [verPagos, setVerPagos] = useState(null) // nombreKey con pagos desplegados
-  const [confirmCargo, setConfirmCargo] = useState(null) // id del cargo a borrar
 
   // Formulario para cargar una deuda a mano.
   const [agregando, setAgregando] = useState(false)
@@ -75,17 +82,15 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
   const q = normalizeNombre(busqueda)
   const matchNombre = (nombre) => !q || normalizeNombre(nombre).includes(q)
 
-  const visible = (s) => matchNombre(s.nombre)
-
-  const deudores = saldos.filter((s) => s.saldo > 0 && visible(s))
+  const deudores = saldos.filter((s) => s.saldo > 0 && matchNombre(s.nombre))
   // Cuentas con plata a favor (pagaron de más): se muestran aparte y visibles,
   // no escondidas en "Saldados".
-  const aFavor = saldos.filter((s) => s.saldo < 0 && visible(s))
+  const aFavor = saldos.filter((s) => s.saldo < 0 && matchNombre(s.nombre))
   // Las cuentas en cero con historial quedan en "Saldados", plegado. Antes se
   // podían archivar para sacarlas de ahí, pero era una vuelta de más: "Saldados"
   // ya está plegado y nadie necesita esconder una cuenta que no debe nada.
   const saldados = saldos.filter(
-    (s) => s.saldo === 0 && visible(s) && (s.cargos.length > 0 || s.pagos.length > 0),
+    (s) => s.saldo === 0 && matchNombre(s.nombre) && (s.cargos.length > 0 || s.pagos.length > 0),
   )
 
   const abrirCobro = (s) => {
@@ -199,37 +204,7 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                   </span>
                   <span className="saldo__mov-monto">{formatMoney(c.monto)}</span>
                   {c.manual && c.id ? (
-                    confirmCargo === c.id ? (
-                      <div className="confirm-inline">
-                        <button
-                          className="confirm-inline__yes"
-                          onClick={() => {
-                            borrarCargo(c.id)
-                            setConfirmCargo(null)
-                          }}
-                          aria-label="Confirmar borrado"
-                          title="Borrar"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          className="confirm-inline__no"
-                          onClick={() => setConfirmCargo(null)}
-                          aria-label="Cancelar"
-                          title="Cancelar"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="player__del"
-                        onClick={() => setConfirmCargo(c.id)}
-                        aria-label="Borrar gasto"
-                      >
-                        ×
-                      </button>
-                    )
+                    <BotonBorrar onConfirm={() => borrarCargo(c.id)} label="Borrar gasto" />
                   ) : (
                     <span className="player__del player__del--ghost" aria-hidden="true" />
                   )}
@@ -276,7 +251,7 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                   placeholder="$ a pagar"
                   value={monto}
                   autoFocus
-                  onChange={(e) => setMonto(e.target.value.replace(/[^\d]/g, ''))}
+                  onChange={(e) => setMonto(soloDigitos(e.target.value))}
                 />
                 <div className="cuenta__medios">
                   {MEDIOS_PAGO.map((p) => (
@@ -362,7 +337,7 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                       inputMode="numeric"
                       placeholder="$ monto"
                       value={cgMonto}
-                      onChange={(e) => setCgMonto(e.target.value.replace(/[^\d]/g, ''))}
+                      onChange={(e) => setCgMonto(soloDigitos(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && agregarCargo()}
                     />
                     <input

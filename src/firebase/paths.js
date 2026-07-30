@@ -10,3 +10,18 @@ export const clubDoc = (clubId, name, id) => doc(db, 'clubs', clubId, name, id)
 // Modo demo / sin Firebase: las claves de localStorage también se separan por
 // club para que probar con varios no mezcle datos.
 export const lsKey = (clubId, name) => `club:${clubId}:${name}`
+
+// Lectura/escritura del espejo local que usa cada módulo cuando no hay Firebase.
+// `fallback` es lo que se devuelve si la clave no existe o quedó corrupta: una
+// lista para las colecciones, un objeto para el stock.
+export function readLocal(clubId, name, fallback) {
+  try {
+    const raw = localStorage.getItem(lsKey(clubId, name))
+    return raw ? JSON.parse(raw) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export const writeLocal = (clubId, name, value) =>
+  localStorage.setItem(lsKey(clubId, name), JSON.stringify(value))

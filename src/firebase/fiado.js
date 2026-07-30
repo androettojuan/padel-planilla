@@ -1,6 +1,6 @@
 import { setDoc, deleteDoc, getDocs } from 'firebase/firestore'
 import { isFirebaseConfigured } from './config'
-import { clubCol, clubDoc, lsKey } from './paths'
+import { clubCol, clubDoc, readLocal, writeLocal } from './paths'
 
 // ---------------------------------------------------------------------------
 // Fiados de un club. Tres colecciones bajo clubs/{clubId}:
@@ -22,15 +22,8 @@ import { clubCol, clubDoc, lsKey } from './paths'
 // El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos,
 // descontando lo archivado por el corte.
 // ---------------------------------------------------------------------------
-const read = (clubId, col) => {
-  try {
-    const raw = localStorage.getItem(lsKey(clubId, col))
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-const write = (clubId, col, list) => localStorage.setItem(lsKey(clubId, col), JSON.stringify(list))
+const read = (clubId, col) => readLocal(clubId, col, [])
+const write = writeLocal
 
 const load = async (clubId, col) => {
   if (!isFirebaseConfigured) return read(clubId, col)

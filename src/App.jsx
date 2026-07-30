@@ -10,8 +10,8 @@ import { useStock } from './hooks/useStock'
 import { useRuta } from './hooks/useRuta'
 import { todayKey } from './utils/helpers'
 import { ejeHorarios } from './data/defaults'
-import { faltaReponer } from './utils/stock'
-import { lineasDeTurno } from './utils/turnos'
+import { productosAReponer } from './utils/stock'
+import { lineasDePlanilla } from './utils/planilla'
 import Header from './components/Header'
 import DateToolbar from './components/DateToolbar'
 import CourtsBoard from './components/CourtsBoard'
@@ -106,8 +106,11 @@ export default function App() {
     ),
   }
 
-  // Con un solo producto para reponer ya se avisa en el botón de Stock.
-  const stockBajo = (config.productos || []).some((p) => faltaReponer(stock, p.id))
+  // Con un solo producto para reponer ya se avisa en la pestaña de Stock.
+  const stockBajo = useMemo(
+    () => productosAReponer(stock, config.productos || []).length > 0,
+    [stock, config.productos],
+  )
 
   // Antes de autorizar: pantalla de carga / login / sin club asignado.
   if (authLoading) {
@@ -153,7 +156,7 @@ export default function App() {
           onOpenClubes={() => ir('clubes')}
         />
 
-        <Nav ruta={ruta} onIr={ir} avisos={{ stock: stockBajo }} />
+        <Nav ruta={ruta} onIr={ir} stockBajo={stockBajo} />
 
         {!isFirebaseConfigured && (
           <div className="banner banner--warn">
@@ -270,23 +273,10 @@ function computeSugerencias(jugadores, planilla) {
 // cobradas; lo no cobrado se acumula en `pendiente`. `total` es el facturado.
 function computeTotals(planilla) {
   const acc = { contado: 0, mercado: 0, anotado: 0, pendiente: 0, total: 0 }
-  const sumar = (monto, item) => {
-    if (item.pagado) acc[item.pago] = (acc[item.pago] || 0) + monto
-    else acc.pendiente += monto
-    acc.total += monto
-  }
-  for (const lista of Object.values(planilla.turnos || {})) {
-    // Un turno de reserva aporta una línea por pago más lo que falte cobrar.
-    for (const t of lista) for (const l of lineasDeTurno(t)) sumar(l.monto, l)
-  }
-  for (const c of planilla.consumos || []) {
-    sumar((Number(c.precio) || 0) * (Number(c.cantidad) || 0), c)
-  }
-  for (const tab of planilla.mostrador || []) {
-    for (const it of tab.items || []) {
-      // El estado de pago vive en la cuenta de mostrador, no en cada ítem.
-      sumar((Number(it.precio) || 0) * (Number(it.cantidad) || 0), tab)
-    }
+  for (const l of lineasDePlanilla(planilla)) {
+    if (l.pagado) acc[l.pago] = (acc[l.pago] || 0) + l.monto
+    else acc.pendiente += l.monto
+    acc.total += l.monto
   }
   return acc
 }

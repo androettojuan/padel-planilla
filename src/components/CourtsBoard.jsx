@@ -1,13 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { turnoKey, horarioLabel } from '../data/defaults'
-import {
-  agregarPago,
-  esReserva,
-  quitarPago,
-  tienePagos,
-  turnoNuevo,
-  MODO_RESERVA,
-} from '../utils/turnos'
+import { agregarPago, esReserva, mutarReserva, quitarPago, tienePagos } from '../utils/turnos'
 import { uid, formatMoney } from '../utils/helpers'
 import SlotCell, { MIN_JUGADORES } from './SlotCell'
 import ReservaCell from './ReservaCell'
@@ -116,10 +109,7 @@ export default function CourtsBoard({ config, eje, planilla, update, loading, su
   // ---- Modo reserva: un turno por celda, con sus pagos encima ----
   const reserva = esReserva(config)
   const mutateReserva = (canchaId, horarioId, fn) =>
-    mutateSlot(turnoKey(canchaId, horarioId), (lista) => {
-      const actual = lista[0] || turnoNuevo(MODO_RESERVA)
-      return [fn(actual), ...lista.slice(1)]
-    })
+    mutateSlot(turnoKey(canchaId, horarioId), (lista) => mutarReserva(lista, fn))
 
   const subtotal = (canchaId, franjas) =>
     franjas.reduce(
@@ -145,14 +135,14 @@ export default function CourtsBoard({ config, eje, planilla, update, loading, su
         onCommitNombre={onCommitNombre}
       />
     ) : (
-    <SlotCell
-      jugadores={lista}
-      onAdd={() => addPlayer(c.id, h.id)}
-      onUpdate={(index, patch) => updatePlayer(c.id, h.id, index, patch)}
-      onRemove={(index) => removePlayer(c.id, h.id, index)}
-      sugerencias={sugerencias}
-      onCommitNombre={onCommitNombre}
-    />
+      <SlotCell
+        jugadores={lista}
+        onAdd={() => addPlayer(c.id, h.id)}
+        onUpdate={(index, patch) => updatePlayer(c.id, h.id, index, patch)}
+        onRemove={(index) => removePlayer(c.id, h.id, index)}
+        sugerencias={sugerencias}
+        onCommitNombre={onCommitNombre}
+      />
     )
   }
 

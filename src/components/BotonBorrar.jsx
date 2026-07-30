@@ -5,15 +5,14 @@ import { useState } from 'react'
  * recién al tocar ✓ se borra. Mismo patrón que la confirmación de los turnos,
  * para que borrar nunca sea un solo clic sobre algo cargado.
  *
- * Con `confirmar={false}` borra directo: sirve para filas vacías o recién
- * agregadas, donde preguntar sería solo un clic de más.
+ * Con `confirmar={false}` borra directo: sirve para las filas vacías, donde
+ * preguntar sería solo un clic de más.
  */
 export default function BotonBorrar({
   onConfirm,
   confirmar = true,
   label = 'Quitar',
   title = 'Quitar',
-  disabled = false,
 }) {
   const [abierto, setAbierto] = useState(false)
 
@@ -46,7 +45,6 @@ export default function BotonBorrar({
   return (
     <button
       className="player__del"
-      disabled={disabled}
       onClick={() => (confirmar ? setAbierto(true) : onConfirm())}
       aria-label={label}
       title={title}

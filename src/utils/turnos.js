@@ -36,9 +36,6 @@ export const totalPagado = (turno) =>
 export const saldoTurno = (turno) =>
   Math.max(0, (Number(turno?.monto) || 0) - totalPagado(turno))
 
-export const turnoSaldado = (turno) =>
-  tienePagos(turno) ? (Number(turno?.monto) || 0) > 0 && saldoTurno(turno) === 0 : !!turno?.pagado
-
 /**
  * Convierte un turno en las líneas de facturación con las que trabajan las
  * cuentas del día, el resumen del mes y los fiados.
@@ -91,6 +88,17 @@ export const agregarPago = (turno, datos) => ({
   ...turno,
   pagos: [...pagosDe(turno), pagoNuevo(datos)],
 })
+
+/**
+ * Aplica `fn` al turno de reserva de una celda. En este modo la celda tiene un
+ * solo turno —quien reservó—, así que si todavía no hay ninguno se crea. Lo que
+ * hubiera de más (una celda anotada antes en el otro modo) se conserva atrás en
+ * vez de perderse.
+ */
+export const mutarReserva = (lista = [], fn) => [
+  fn(lista[0] || turnoNuevo(MODO_RESERVA)),
+  ...lista.slice(1),
+]
 
 export const quitarPago = (turno, pagoId) => ({
   ...turno,

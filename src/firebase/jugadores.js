@@ -1,23 +1,14 @@
 import { setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore'
 import { isFirebaseConfigured } from './config'
-import { clubCol, clubDoc, lsKey } from './paths'
+import { clubCol, clubDoc, readLocal as leer, writeLocal as escribir } from './paths'
 
 // ---------------------------------------------------------------------------
 // Directorio de jugadores del club. Colección: clubs/{clubId}/jugadores/{id}
 //   { id, nombre, alias?, telefono?, activo, creado }
 // Se usa para autocompletar nombres y para los saldos/fiados.
 // ---------------------------------------------------------------------------
-const key = (clubId) => lsKey(clubId, 'jugadores')
-
-const readLocal = (clubId) => {
-  try {
-    const raw = localStorage.getItem(key(clubId))
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-const writeLocal = (clubId, list) => localStorage.setItem(key(clubId), JSON.stringify(list))
+const readLocal = (clubId) => leer(clubId, 'jugadores', [])
+const writeLocal = (clubId, list) => escribir(clubId, 'jugadores', list)
 
 // Notifica la lista completa cada vez que cambia. En modo demo (sin Firebase)
 // lee de localStorage una sola vez.

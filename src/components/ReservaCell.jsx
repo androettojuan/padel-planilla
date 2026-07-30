@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { PAGOS_BY_ID } from '../data/defaults'
-import { formatMoney } from '../utils/helpers'
+import { formatMoney, soloDigitos } from '../utils/helpers'
 import { pagosDe, saldoTurno, totalPagado } from '../utils/turnos'
 import NombreInput from './NombreInput'
 import PagoSelector from './PagoSelector'
@@ -57,7 +57,7 @@ export default function ReservaCell({ turno, onUpdate, onAddPago, onRemovePago, 
           inputMode="numeric"
           placeholder="$"
           value={turno?.monto ?? ''}
-          onChange={(e) => onUpdate({ monto: e.target.value.replace(/[^\d]/g, '') })}
+          onChange={(e) => onUpdate({ monto: soloDigitos(e.target.value) })}
         />
       </div>
 
@@ -100,7 +100,7 @@ export default function ReservaCell({ turno, onUpdate, onAddPago, onRemovePago, 
             placeholder="$"
             autoFocus
             value={monto}
-            onChange={(e) => setMonto(e.target.value.replace(/[^\d]/g, ''))}
+            onChange={(e) => setMonto(soloDigitos(e.target.value))}
           />
           <PagoSelector value={medio} onChange={setMedio} size="sm" />
           <button className="btn btn--primary btn--sm" onClick={confirmar} disabled={!(Number(monto) > 0)}>
