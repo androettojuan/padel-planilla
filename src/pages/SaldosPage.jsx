@@ -17,13 +17,13 @@ import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
 import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
 import { useClubId } from '../hooks/useClub'
-import NombreInput from './NombreInput'
+import NombreInput from '../components/NombreInput'
 
 // Medios con los que se puede saldar un fiado (todos menos "Anotado", que es
 // justamente lo que genera la deuda).
 const MEDIOS_PAGO = PAGOS.filter((p) => p.id !== 'anotado')
 
-export default function SaldosModal({ jugadores = [], sugerencias = [], onCommitNombre, onClose }) {
+export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitNombre }) {
   const clubId = useClubId()
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
@@ -377,16 +377,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Saldos / Fiados</h2>
-          <button className="player__del" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
-        </div>
-
-        <div className="modal__body">
+    <>
           {error ? (
             <p className="banner banner--error">No se pudo cargar: {error.message}</p>
           ) : !planillas ? (
@@ -498,14 +489,6 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
               )}
             </>
           )}
-        </div>
-
-        <div className="modal__footer">
-          <button className="btn btn--primary" onClick={onClose}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }

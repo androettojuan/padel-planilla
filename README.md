@@ -7,6 +7,23 @@ Construida con **Vite + React + Firebase** (Firestore + Auth con Google).
 Una sola instalación atiende a **varios clubes**: cada uno ve únicamente sus
 propios datos.
 
+## Cómo está organizada
+
+La app son cinco secciones, con pestañas arriba y una URL propia cada una
+(`#/stock`, `#/finanzas`, …), así el botón atrás del navegador funciona y
+recargar deja la tablet donde estaba:
+
+| Sección           | Qué hay adentro                                              |
+| ----------------- | ------------------------------------------------------------ |
+| **Planilla**      | la grilla del día, las cuentas y los consumos                 |
+| **Stock**         | los productos con su precio, lo que queda de cada uno y las compras |
+| **Jugadores**     | el directorio de nombres que se sugieren al anotar            |
+| **Finanzas**      | resumen del mes y fiados                                      |
+| **Configuración** | datos del club, canchas y horarios                            |
+
+La administración de clubes (crear clubes, dar de alta usuarios) está en el menú
+de la cuenta, arriba a la derecha, y solo la ven los super admins.
+
 ## Qué hace
 
 - **Grilla de turnos** por cancha y franja horaria. En cada turno se anota el
@@ -26,8 +43,10 @@ propios datos.
   planilla use todo el ancho de la pantalla.
 - **Stock** de la mercadería: se carga con las compras (cantidad y costo) y cada
   consumo lo descuenta solo. Muestra cuánta plata hay en mercadería, avisa qué
-  hay que reponer y en el resumen del mes calcula la ganancia de los consumos.
-  Un producto sin compras cargadas se vende sin descontar nada.
+  hay que reponer —con un punto en la pestaña— y en el resumen del mes calcula la
+  ganancia de los consumos. Una compra cargada mal se corrige o se deshace, y el
+  costo del producto vuelve a ser el de la última compra que quede. Un producto
+  sin compras cargadas se vende sin descontar nada.
 - **Totales del día** discriminados por tipo de pago, en tiempo real.
 - **Navegación por fecha**: cada día tiene su propia planilla.
 - **Saldos / fiados** y **resumen mensual** por club.

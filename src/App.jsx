@@ -7,6 +7,7 @@ import { useConfig } from './hooks/useConfig'
 import { useJugadores } from './hooks/useJugadores'
 import { usePlanilla } from './hooks/usePlanilla'
 import { useStock } from './hooks/useStock'
+import { useRuta } from './hooks/useRuta'
 import { todayKey } from './utils/helpers'
 import { ejeHorarios } from './data/defaults'
 import { faltaReponer } from './utils/stock'
@@ -16,11 +17,12 @@ import CourtsBoard from './components/CourtsBoard'
 import ConsumosPanel from './components/ConsumosPanel'
 import CuentasPanel from './components/CuentasPanel'
 import PanelesDrawer, { SolapaPaneles } from './components/PanelesDrawer'
-import ConfigModal from './components/ConfigModal'
-import ResumenMensualModal from './components/ResumenMensualModal'
-import StockModal from './components/StockModal'
-import SaldosModal from './components/SaldosModal'
-import AdminClubesModal from './components/AdminClubesModal'
+import Nav from './components/Nav'
+import ConfigPage from './pages/ConfigPage'
+import StockPage from './pages/StockPage'
+import JugadoresPage from './pages/JugadoresPage'
+import FinanzasPage from './pages/FinanzasPage'
+import ClubesPage from './pages/ClubesPage'
 import LoginScreen from './components/LoginScreen'
 
 // A partir de esta cantidad de canchas la planilla se queda con todo el ancho y
@@ -42,11 +44,7 @@ const CANCHAS_PARA_ANCHO_MAX = 4
 export default function App() {
   const [dateKey, setDateKey] = useState(todayKey())
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [configOpen, setConfigOpen] = useState(false)
-  const [resumenOpen, setResumenOpen] = useState(false)
-  const [saldosOpen, setSaldosOpen] = useState(false)
-  const [stockOpen, setStockOpen] = useState(false)
-  const [adminOpen, setAdminOpen] = useState(false)
+  const { ruta, ir } = useRuta()
 
   const sesion = useSesion()
   const {
@@ -127,24 +125,12 @@ export default function App() {
           Tu cuenta es super admin pero no pertenece a ningún club. Creá uno y agregate como
           usuario para poder usar la planilla.
         </div>
-        <div className="login">
-          <div className="login__card">
-            <h1 className="login__title">Administración</h1>
-            <button className="btn btn--primary" onClick={() => setAdminOpen(true)}>
-              Abrir administración de clubes
-            </button>
-            <button className="btn" onClick={signOut}>
-              Cerrar sesión
-            </button>
-          </div>
+        <ClubesPage emailActual={user?.email} onCambios={recargarClubs} />
+        <div className="app__pie">
+          <button className="btn" onClick={signOut}>
+            Cerrar sesión
+          </button>
         </div>
-        {adminOpen && (
-          <AdminClubesModal
-            emailActual={user?.email}
-            onCambios={recargarClubs}
-            onClose={() => setAdminOpen(false)}
-          />
-        )}
       </div>
     )
   }
@@ -163,9 +149,10 @@ export default function App() {
           user={user}
           superAdmin={superAdmin}
           onSignOut={signOut}
-          onOpenConfig={() => setConfigOpen(true)}
-          onOpenAdmin={() => setAdminOpen(true)}
+          onOpenClubes={() => ir('clubes')}
         />
+
+        <Nav ruta={ruta} onIr={ir} avisos={{ stock: stockBajo }} />
 
         {!isFirebaseConfigured && (
           <div className="banner banner--warn">
@@ -182,89 +169,75 @@ export default function App() {
           <div className="banner banner--error">Error al leer/guardar la planilla: {error.message}</div>
         )}
 
-        <DateToolbar
-          dateKey={dateKey}
-          onChange={setDateKey}
-          totals={totals}
-          onOpenResumen={() => setResumenOpen(true)}
-          onOpenSaldos={() => setSaldosOpen(true)}
-          onOpenStock={() => setStockOpen(true)}
-          stockBajo={stockBajo}
-        />
+        {ruta === 'planilla' && (
+          <>
+            <DateToolbar dateKey={dateKey} onChange={setDateKey} totals={totals} />
 
-        <main className={`layout ${anchoCompleto ? 'layout--ancho' : ''}`}>
-          <section className="layout__courts">
-            <CourtsBoard
-              config={config}
-              eje={eje}
-              planilla={planilla}
-              update={update}
-              loading={loading}
-              sugerencias={sugerencias}
-              onCommitNombre={upsertNombre}
-            />
-          </section>
-          {!anchoCompleto && (
-            <aside className="layout__consumos">
-              {paneles.cuentas}
-              {paneles.consumos}
-            </aside>
-          )}
-        </main>
+            <main className={`layout ${anchoCompleto ? 'layout--ancho' : ''}`}>
+              <section className="layout__courts">
+                <CourtsBoard
+                  config={config}
+                  eje={eje}
+                  planilla={planilla}
+                  update={update}
+                  loading={loading}
+                  sugerencias={sugerencias}
+                  onCommitNombre={upsertNombre}
+                />
+              </section>
+              {!anchoCompleto && (
+                <aside className="layout__consumos">
+                  {paneles.cuentas}
+                  {paneles.consumos}
+                </aside>
+              )}
+            </main>
 
-        {anchoCompleto && !drawerOpen && (
-          <SolapaPaneles onOpen={() => setDrawerOpen(true)} pendiente={totals.pendiente} />
+            {anchoCompleto && !drawerOpen && (
+              <SolapaPaneles onOpen={() => setDrawerOpen(true)} pendiente={totals.pendiente} />
+            )}
+            {anchoCompleto && drawerOpen && (
+              <PanelesDrawer onClose={() => setDrawerOpen(false)} paneles={paneles} />
+            )}
+          </>
         )}
 
-        {anchoCompleto && drawerOpen && (
-          <PanelesDrawer onClose={() => setDrawerOpen(false)} paneles={paneles} />
-        )}
-
-        {configOpen && (
-          <ConfigModal
-            config={config}
-            club={club}
-            onSave={saveConfig}
-            onSaveClub={saveClub}
-            onClose={() => setConfigOpen(false)}
-            jugadores={jugadores}
-            onSaveJugador={saveJugador}
-            onDeleteJugador={deleteJugador}
-          />
-        )}
-
-        {resumenOpen && (
-          <ResumenMensualModal monthKey={dateKey.slice(0, 7)} onClose={() => setResumenOpen(false)} />
-        )}
-
-        {stockOpen && (
-          <StockModal
+        {ruta === 'stock' && (
+          <StockPage
             config={config}
             stock={stock}
+            onGuardarProductos={(productos) => saveConfig({ ...config, productos })}
             onComprar={comprar}
             onEditarCompra={editar}
             onDeshacerCompra={deshacer}
             onAjustar={ajustar}
             onMinimo={setMinimo}
-            onClose={() => setStockOpen(false)}
           />
         )}
 
-        {saldosOpen && (
-          <SaldosModal
+        {ruta === 'jugadores' && (
+          <JugadoresPage
+            jugadores={jugadores}
+            onSave={saveJugador}
+            onDelete={deleteJugador}
+          />
+        )}
+
+        {ruta === 'finanzas' && (
+          <FinanzasPage
+            monthKey={dateKey.slice(0, 7)}
             jugadores={jugadores}
             sugerencias={sugerencias}
             onCommitNombre={upsertNombre}
-            onClose={() => setSaldosOpen(false)}
           />
         )}
 
-        {adminOpen && superAdmin && (
-          <AdminClubesModal
-            emailActual={user?.email}
-            onCambios={recargarClubs}
-            onClose={() => setAdminOpen(false)}
-          />
+        {ruta === 'config' && (
+          <ConfigPage config={config} club={club} onSave={saveConfig} onSaveClub={saveClub} />
+        )}
+
+        {ruta === 'clubes' && superAdmin && (
+          <ClubesPage emailActual={user?.email} onCambios={recargarClubs} />
         )}
       </div>
     </ClubProvider>

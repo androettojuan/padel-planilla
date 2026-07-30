@@ -8,12 +8,13 @@ import {
   quitarMiembro,
 } from '../firebase/clubs'
 import { slugify } from '../utils/helpers'
-import BotonBorrar from './BotonBorrar'
+import BotonBorrar from '../components/BotonBorrar'
+import Pantalla from '../components/Pantalla'
 
 // Panel del super admin: crear clubes y decidir quién entra a cada uno.
 // El alta de un usuario es simplemente sumar su email al club; la primera vez
 // que entre con Google va a encontrar la planilla del club esperándolo.
-export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
+export default function ClubesPage({ onCambios, emailActual }) {
   const [clubs, setClubs] = useState(null) // null = cargando
   const [error, setError] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
@@ -119,16 +120,10 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Administración de clubes</h2>
-          <button className="player__del" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
-        </div>
-
-        <div className="modal__body">
+    <Pantalla
+      titulo="Clubes"
+      descripcion="Crear clubes y decidir quién entra a cada uno. Solo para super admins."
+    >
           {error && <div className="banner banner--error">{error.message}</div>}
 
           {/* Alta de club */}
@@ -245,14 +240,6 @@ export default function AdminClubesModal({ onClose, onCambios, emailActual }) {
               ))}
             </section>
           )}
-        </div>
-
-        <div className="modal__footer">
-          <button className="btn" onClick={onClose}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+    </Pantalla>
   )
 }

@@ -179,6 +179,214 @@ select {
 .header__config:hover {
   background: rgba(255, 255, 255, 0.18);
 }
+
+/* ---------- Menú del usuario ---------- */
+.usuario {
+  position: relative;
+}
+.usuario__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 230px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 13px;
+  transition: background 0.12s ease;
+}
+.usuario__btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.usuario__avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.usuario__email {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usuario__flecha {
+  font-size: 11px;
+  opacity: 0.8;
+}
+.usuario__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+  padding: 6px;
+  z-index: 60;
+}
+.usuario__menu-email {
+  margin: 0;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-soft);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usuario__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.usuario__item:hover {
+  background: var(--surface-2);
+}
+.usuario__item--salir {
+  color: #dc2626;
+}
+.usuario__item--salir:hover {
+  background: #fee2e2;
+}
+
+/* ---------- Pestañas de secciones ---------- */
+.nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 6px;
+  margin-top: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.nav__tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.nav__tab:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav__tab.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+.nav__icono {
+  font-size: 15px;
+}
+.nav__aviso {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+/* ---------- Secciones (páginas) ---------- */
+.pantalla {
+  margin-top: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.pantalla__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.pantalla__titulo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.pantalla__desc {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  max-width: 70ch;
+}
+.pantalla__acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* En pantallas anchas el contenido no se estira de punta a punta: un campo de
+   nombre de 1500px o una tarjeta de total gigante son incómodos de leer. La
+   planilla es la excepción y por eso no usa este marco. */
+.pantalla__body {
+  padding: 18px 20px;
+  max-width: 1040px;
+}
+.pantalla__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+/* Solapas dentro de una sección (Finanzas: mes / fiados). */
+.subnav {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.subnav__tab {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.subnav__tab.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.app__pie {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
 .header__total {
   text-align: right;
   display: flex;

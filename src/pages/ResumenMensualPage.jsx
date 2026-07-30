@@ -8,7 +8,7 @@ import { useClubId } from '../hooks/useClub'
 
 const medioLabel = (id) => PAGOS.find((p) => p.id === id)?.label || id
 
-export default function ResumenMensualModal({ monthKey, onClose }) {
+export default function ResumenMensualPage({ monthKey }) {
   const clubId = useClubId()
   const [mes, setMes] = useState(monthKey)
   const [planillas, setPlanillas] = useState(null) // null = cargando
@@ -46,16 +46,7 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
   const sinDatos = planillas && r.total === 0
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Resumen mensual</h2>
-          <button className="player__del" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
-        </div>
-
-        <div className="modal__body">
+    <>
           <div className="resumen__nav">
             <button className="btn btn--ghost" onClick={() => setMes(shiftMonth(mes, -1))} aria-label="Mes anterior">
               ‹
@@ -211,14 +202,6 @@ export default function ResumenMensualModal({ monthKey, onClose }) {
               )}
             </>
           )}
-        </div>
-
-        <div className="modal__footer">
-          <button className="btn btn--primary" onClick={onClose}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }

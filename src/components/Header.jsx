@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { formatMoney } from '../utils/helpers'
 
 export default function Header({
@@ -8,13 +9,38 @@ export default function Header({
   user,
   superAdmin,
   onSignOut,
-  onOpenConfig,
-  onOpenAdmin,
+  onOpenClubes,
 }) {
+  const [menu, setMenu] = useState(false)
+  const menuRef = useRef(null)
+
+  // El menú de la cuenta se cierra al tocar afuera o con Escape, como cualquier
+  // menú del sistema.
+  useEffect(() => {
+    if (!menu) return
+    const fuera = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false)
+    }
+    const esc = (e) => e.key === 'Escape' && setMenu(false)
+    document.addEventListener('mousedown', fuera)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', fuera)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [menu])
+
+  const inicial = (user?.email || '?').trim().charAt(0).toUpperCase()
+
   return (
     <header className="header">
       <div className="header__brand">
-        <img className="header__logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img
+          className="header__logo"
+          src={`${import.meta.env.BASE_URL}logo.svg`}
+          alt=""
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
         <div>
           {/* Con más de un club el título es un selector para cambiar de club. */}
           {clubs.length > 1 ? (
@@ -41,28 +67,52 @@ export default function Header({
           <span className="header__total-label">Total del día</span>
           <span className="header__total-value">{formatMoney(totals.total)}</span>
         </div>
-        {superAdmin && onOpenAdmin && (
-          <button
-            className="header__config"
-            onClick={onOpenAdmin}
-            aria-label="Administración de clubes"
-            title="Administración de clubes"
-          >
-            ★
-          </button>
-        )}
-        <button className="header__config" onClick={onOpenConfig} aria-label="Configuración" title="Configuración">
-          ⚙
-        </button>
-        {user && onSignOut && (
-          <button
-            className="header__config"
-            onClick={onSignOut}
-            aria-label="Cerrar sesión"
-            title={`Cerrar sesión (${user.email})`}
-          >
-            ⎋
-          </button>
+
+        {user && (
+          <div className="usuario" ref={menuRef}>
+            <button
+              className="usuario__btn"
+              onClick={() => setMenu((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menu}
+              title={user.email}
+            >
+              <span className="usuario__avatar" aria-hidden="true">
+                {inicial}
+              </span>
+              <span className="usuario__email">{user.email}</span>
+              <span className="usuario__flecha" aria-hidden="true">
+                ▾
+              </span>
+            </button>
+
+            {menu && (
+              <div className="usuario__menu" role="menu">
+                <p className="usuario__menu-email">{user.email}</p>
+                {superAdmin && onOpenClubes && (
+                  <button
+                    className="usuario__item"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenu(false)
+                      onOpenClubes()
+                    }}
+                  >
+                    ★ Administrar clubes
+                  </button>
+                )}
+                {onSignOut && (
+                  <button
+                    className="usuario__item usuario__item--salir"
+                    role="menuitem"
+                    onClick={onSignOut}
+                  >
+                    Cerrar sesión
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </header>

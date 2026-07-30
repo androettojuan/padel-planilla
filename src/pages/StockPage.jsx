@@ -3,7 +3,9 @@ import { formatMoney, formatDateNumeric, todayKey } from '../utils/helpers'
 import { cantidadDe, costoDe, faltaReponer, valorStock } from '../utils/stock'
 import { loadCompras } from '../firebase/stock'
 import { useClubId } from '../hooks/useClub'
-import BotonBorrar from './BotonBorrar'
+import BotonBorrar from '../components/BotonBorrar'
+import Pantalla from '../components/Pantalla'
+import ProductosSection from '../components/ProductosSection'
 
 /**
  * Pantalla de stock: cuánto queda de cada producto, a qué costo entró y cuánta
@@ -11,17 +13,19 @@ import BotonBorrar from './BotonBorrar'
  * dejan el costo nuevo), se corrige a mano lo que hay y se fija el mínimo con el
  * que el producto queda marcado para reponer.
  *
- * Los productos son los del club (Configuración); acá solo se maneja su stock.
+ * Los productos del club (nombre y precio de venta) también se cargan acá: es lo
+ * mismo que se compra y se vende, así que vive todo junto en vez de estar la
+ * mitad en Configuración.
  */
-export default function StockModal({
+export default function StockPage({
   config,
   stock,
+  onGuardarProductos,
   onComprar,
   onEditarCompra,
   onDeshacerCompra,
   onAjustar,
   onMinimo,
-  onClose,
 }) {
   const clubId = useClubId()
   const productos = config.productos || []
@@ -79,17 +83,11 @@ export default function StockModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Stock</h2>
-          <button className="player__del" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
-        </div>
-
-        <div className="modal__body">
-          {error && <p className="banner banner--error">No se pudo guardar: {error.message}</p>}
+    <Pantalla
+      titulo="Stock"
+      descripcion="Los productos del club, lo que queda de cada uno y las compras con las que se repuso."
+    >
+      {error && <p className="banner banner--error">No se pudo guardar: {error.message}</p>}
 
           <div className="resumen__total">
             <span className="resumen__total-label">Plata en mercadería</span>
@@ -102,15 +100,12 @@ export default function StockModal({
             </p>
           )}
 
-          {productos.length === 0 ? (
-            <p className="cfg-hint">
-              Todavía no hay productos cargados. Se agregan desde Configuración, y acá se les
-              carga el stock.
-            </p>
-          ) : (
+      <ProductosSection productos={productos} onGuardar={onGuardarProductos} />
+
+          {productos.length > 0 && (
             <section className="cfg-section">
               <div className="cfg-section__head">
-                <h3 className="cfg-section__title">Productos</h3>
+                <h3 className="cfg-section__title">Lo que hay</h3>
               </div>
               <p className="cfg-hint">
                 Un producto entra al control de stock cuando le cargás la primera compra. Hasta
@@ -230,15 +225,7 @@ export default function StockModal({
               </ul>
             </section>
           )}
-        </div>
-
-        <div className="modal__footer">
-          <button className="btn" onClick={onClose}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+    </Pantalla>
   )
 }
 
