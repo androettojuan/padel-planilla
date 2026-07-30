@@ -5,6 +5,7 @@ import { resumenMensual } from '../utils/resumen'
 import { PAGOS } from '../data/defaults'
 import { formatMoney, formatMonth, formatDayShort, shiftMonth } from '../utils/helpers'
 import { useClubId } from '../hooks/useClub'
+import Detalle from '../components/Detalle'
 
 const medioLabel = (id) => PAGOS.find((p) => p.id === id)?.label || id
 
@@ -65,74 +66,105 @@ export default function ResumenMensualPage({ monthKey }) {
             <p className="muted resumen__estado">No hay movimientos en este mes.</p>
           ) : (
             <>
+              {/* Lo que efectivamente entró: ventas cobradas + fiados que pagaron. */}
               <div className="resumen__total">
-                <span className="resumen__total-label">Total facturado</span>
-                <span className="resumen__total-value">{formatMoney(r.total)}</span>
+                <span className="resumen__total-label">Entró en caja</span>
+                <span className="resumen__total-value">{formatMoney(r.caja.total)}</span>
               </div>
-
               <div className="resumen__cards">
-                {PAGOS.map((p) => (
-                  <div className="resumen__card" key={p.id} style={{ '--pago-color': p.color }}>
-                    <span className="resumen__card-label">{p.label}</span>
-                    <span className="resumen__card-value">{formatMoney(r[p.id])}</span>
-                  </div>
-                ))}
-                {r.pendiente > 0 && (
-                  <div className="resumen__card" style={{ '--pago-color': '#94a3b8' }}>
-                    <span className="resumen__card-label">Pendiente (sin cobrar)</span>
-                    <span className="resumen__card-value">{formatMoney(r.pendiente)}</span>
+                <div className="resumen__card" style={{ '--pago-color': '#16a34a' }}>
+                  <span className="resumen__card-label">Contado</span>
+                  <span className="resumen__card-value">{formatMoney(r.caja.contado)}</span>
+                </div>
+                <div className="resumen__card" style={{ '--pago-color': '#2563eb' }}>
+                  <span className="resumen__card-label">Mercado Pago</span>
+                  <span className="resumen__card-value">{formatMoney(r.caja.mercado)}</span>
+                </div>
+                {r.caja.fiado > 0 && (
+                  <div className="resumen__card" style={{ '--pago-color': '#7c3aed' }}>
+                    <span className="resumen__card-label">De eso, cobros de fiado</span>
+                    <span className="resumen__card-value">{formatMoney(r.caja.fiado)}</span>
                   </div>
                 )}
               </div>
 
-              {r.fiadoCobrado.total > 0 && (
+              {/* Lo vendido en el mes, se haya cobrado o no. */}
+              <div className="resumen__sub">
+                <h3 className="resumen__sub-titulo">Se facturó</h3>
+                <span className="resumen__sub-total">{formatMoney(r.total)}</span>
+              </div>
+              <div className="resumen__cards">
+                <div className="resumen__card" style={{ '--pago-color': '#16a34a' }}>
+                  <span className="resumen__card-label">Cobrado en el momento</span>
+                  <span className="resumen__card-value">{formatMoney(r.cobrado)}</span>
+                </div>
+                <div className="resumen__card" style={{ '--pago-color': '#f59e0b' }}>
+                  <span className="resumen__card-label">Quedó anotado (fiado)</span>
+                  <span className="resumen__card-value">{formatMoney(r.anotado)}</span>
+                </div>
+                {r.pendiente > 0 && (
+                  <div className="resumen__card" style={{ '--pago-color': '#94a3b8' }}>
+                    <span className="resumen__card-label">Sin cobrar todavía</span>
+                    <span className="resumen__card-value">{formatMoney(r.pendiente)}</span>
+                  </div>
+                )}
+              </div>
+              {r.caja.fiado > 0 && (
                 <p className="resumen__nota">
-                  💵 Este mes entraron <strong>{formatMoney(r.fiadoCobrado.total)}</strong> en pagos
-                  de fiados
-                  {r.fiadoCobrado.contado > 0 && ` · Contado ${formatMoney(r.fiadoCobrado.contado)}`}
-                  {r.fiadoCobrado.mercado > 0 && ` · Mercado ${formatMoney(r.fiadoCobrado.mercado)}`}
-                  . Ya están sumados en Contado/Mercado y restados de Anotado.
-                  {r.anotado < 0 &&
-                    ' El Anotado quedó en negativo porque este mes se cobró más fiado viejo del que se anotó nuevo.'}
+                  Los {formatMoney(r.caja.fiado)} de fiados cobrados no figuran acá abajo: se
+                  facturaron el día que se anotaron, que puede haber sido en otro mes.
                 </p>
               )}
 
-              {/* Ganancia de los consumos: lo vendido menos lo que costó */}
+              {/* Consumos: cuánto se vendió y, si hay costos cargados, la ganancia. */}
               {r.consumos.venta > 0 && (
-                <section className="cfg-section">
-                  <div className="cfg-section__head">
-                    <h3 className="cfg-section__title">Consumos del mes</h3>
-                    <span className="resumen__anotado-total">
-                      {formatMoney(r.consumos.ganancia)} de ganancia
-                    </span>
+                <>
+                  <div className="resumen__sub">
+                    <h3 className="resumen__sub-titulo">Consumos del mes</h3>
+                    {r.consumos.hayCosto && (
+                      <span className="resumen__sub-total">
+                        {formatMoney(r.consumos.ganancia)} de ganancia
+                      </span>
+                    )}
                   </div>
                   <div className="resumen__cards">
                     <div className="resumen__card" style={{ '--pago-color': '#16a34a' }}>
                       <span className="resumen__card-label">Vendido</span>
                       <span className="resumen__card-value">{formatMoney(r.consumos.venta)}</span>
                     </div>
-                    <div className="resumen__card" style={{ '--pago-color': '#dc2626' }}>
-                      <span className="resumen__card-label">Costo de la mercadería</span>
-                      <span className="resumen__card-value">{formatMoney(r.consumos.costo)}</span>
-                    </div>
-                    <div className="resumen__card" style={{ '--pago-color': '#2563eb' }}>
-                      <span className="resumen__card-label">Ganancia</span>
-                      <span className="resumen__card-value">{formatMoney(r.consumos.ganancia)}</span>
-                    </div>
+                    {r.consumos.hayCosto && (
+                      <>
+                        <div className="resumen__card" style={{ '--pago-color': '#dc2626' }}>
+                          <span className="resumen__card-label">Costó</span>
+                          <span className="resumen__card-value">{formatMoney(r.consumos.costo)}</span>
+                        </div>
+                        <div className="resumen__card" style={{ '--pago-color': '#2563eb' }}>
+                          <span className="resumen__card-label">Ganancia</span>
+                          <span className="resumen__card-value">
+                            {formatMoney(r.consumos.ganancia)}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {r.consumos.sinCosto > 0 && (
-                    <p className="cfg-hint">
-                      {formatMoney(r.consumos.sinCosto)} de consumos no tienen costo cargado (se
-                      vendieron antes de llevar el stock, o de un producto sin control), así que la
-                      ganancia real es menor.
+                  {!r.consumos.hayCosto ? (
+                    <p className="resumen__nota">
+                      Todavía no hay compras cargadas en Stock, así que no se puede calcular
+                      cuánto costó esta mercadería ni la ganancia.
                     </p>
+                  ) : (
+                    r.consumos.sinCosto > 0 && (
+                      <p className="resumen__nota">
+                        {formatMoney(r.consumos.sinCosto)} se vendieron sin costo cargado, así que
+                        la ganancia real es algo menor.
+                      </p>
+                    )
                   )}
-                </section>
+                </>
               )}
 
-              {/* Desglose por día */}
-              <section className="cfg-section">
-                <h3 className="cfg-section__title">Por día</h3>
+              {/* Detalles: plegados, para que la pantalla arranque con los números. */}
+              <Detalle titulo="Facturado por día" total={formatMoney(r.total)}>
                 <table className="resumen__tabla">
                   <thead>
                     <tr>
@@ -140,6 +172,9 @@ export default function ResumenMensualPage({ monthKey }) {
                       <th>Contado</th>
                       <th>Mercado</th>
                       <th>Anotado</th>
+                      {/* Sin esta columna las filas no cerraban: el total incluye
+                          lo que todavía no se cobró. */}
+                      <th>Sin cobrar</th>
                       <th>Total</th>
                     </tr>
                   </thead>
@@ -150,19 +185,15 @@ export default function ResumenMensualPage({ monthKey }) {
                         <td>{d.contado ? formatMoney(d.contado) : '—'}</td>
                         <td>{d.mercado ? formatMoney(d.mercado) : '—'}</td>
                         <td>{d.anotado ? formatMoney(d.anotado) : '—'}</td>
+                        <td>{d.pendiente ? formatMoney(d.pendiente) : '—'}</td>
                         <td className="resumen__td-total">{formatMoney(d.total)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </section>
+              </Detalle>
 
-              {/* Detalle de lo anotado */}
-              <section className="cfg-section">
-                <div className="cfg-section__head">
-                  <h3 className="cfg-section__title">Detalle de lo anotado</h3>
-                  <span className="resumen__anotado-total">{formatMoney(r.anotado)}</span>
-                </div>
+              <Detalle titulo="Qué quedó anotado" total={formatMoney(r.anotado)}>
                 {r.anotadoDetalle.length === 0 ? (
                   <p className="muted">No hay nada anotado este mes.</p>
                 ) : (
@@ -177,17 +208,13 @@ export default function ResumenMensualPage({ monthKey }) {
                     ))}
                   </ul>
                 )}
-              </section>
+              </Detalle>
 
-              {/* Cobros de fiado del mes (plata que entró por pagos de fiados) */}
               {r.fiadoCobradoDetalle.length > 0 && (
-                <section className="cfg-section">
-                  <div className="cfg-section__head">
-                    <h3 className="cfg-section__title">Cobros de fiado</h3>
-                    <span className="resumen__anotado-total">
-                      {formatMoney(r.fiadoCobrado.total)}
-                    </span>
-                  </div>
+                <Detalle
+                  titulo="Fiados que pagaron"
+                  total={formatMoney(r.fiadoCobrado.total)}
+                >
                   <ul className="resumen__anotado">
                     {r.fiadoCobradoDetalle.map((a, i) => (
                       <li className="resumen__anotado-row" key={`${a.dateKey}-${i}`}>
@@ -198,7 +225,7 @@ export default function ResumenMensualPage({ monthKey }) {
                       </li>
                     ))}
                   </ul>
-                </section>
+                </Detalle>
               )}
             </>
           )}

@@ -1,15 +1,16 @@
-// Agrega todas las planillas de un mes en totales por medio de pago, con el
-// desglose por día y el detalle de lo anotado (lo que quedó "fiado").
+// Agrega todas las planillas de un mes en dos miradas distintas de la misma
+// actividad, que antes venían mezcladas y se pisaban entre sí:
 //
-// Solo las líneas confirmadas (pagado) tienen medio de pago; lo no cobrado se
-// acumula como "pendiente". `total` es lo facturado en el mes.
+//   FACTURADO — lo que se vendió este mes, cobrado o no: contado, mercado,
+//     anotado (lo que quedó fiado) y pendiente. `total` es la suma.
+//   CAJA — la plata que efectivamente entró este mes: lo cobrado en el momento
+//     (contado + mercado) más los pagos de fiados, que pueden ser de deudas de
+//     meses anteriores.
 //
-// Además recibe los pagos de fiado del mes (`fiadoPagos`, filtrados por fecha de
-// pago): cada pago es plata que entró este mes por su medio (contado/mercado),
-// así que se SUMA a ese medio y se RESTA de anotado (deja de estar fiado). Como
-// un pago puede saldar deuda anotada en meses anteriores, el anotado del mes
-// puede quedar negativo (se cobró más fiado viejo del que se anotó nuevo); por
-// eso se devuelve `fiadoCobrado` para poder explicarlo en la UI.
+// Un pago de fiado NO se resta del anotado del mes. Antes sí, y por eso el
+// anotado podía quedar en $0 o en negativo mientras su propio detalle listaba
+// cargos: dos números que se contradecían. Ahora cada cosa se cuenta una sola vez
+// y en un solo lugar.
 
 import { conceptoConsumo, nombreConsumo } from './consumos'
 
@@ -76,25 +77,22 @@ export function resumenMensual(planillas, fiadoPagos = []) {
     }
   }
 
-  // Pagos de fiado cobrados este mes: mueven plata de anotado al medio real.
+  // Pagos de fiado cobrados este mes. Son plata que entra, pero NO facturación
+  // nueva —lo facturado fue el día que se anotó, tal vez meses atrás—, así que
+  // suman a la caja y no tocan ni el total ni el desglose por día.
   for (const p of fiadoPagos) {
     const monto = Number(p.monto) || 0
     if (!(monto > 0)) continue
     const medio = p.medio === 'contado' || p.medio === 'mercado' ? p.medio : null
     if (!medio) continue // un fiado no se salda con "anotado"
-    const dateKey = p.fecha || ''
-    acc[medio] += monto
-    acc.anotado -= monto
-    if (dateKey) {
-      const d = dia(dateKey)
-      d[medio] += monto
-      d.anotado -= monto
-      // No tocamos d.total ni acc.total: un pago no es facturación nueva, solo
-      // reclasifica plata ya facturada de anotado al medio con que se cobró.
-    }
     fiadoCobrado[medio] += monto
     fiadoCobrado.total += monto
-    fiadoCobradoDetalle.push({ dateKey, nombre: (p.nombre || '').trim() || 'Sin nombre', medio, monto })
+    fiadoCobradoDetalle.push({
+      dateKey: p.fecha || '',
+      nombre: (p.nombre || '').trim() || 'Sin nombre',
+      medio,
+      monto,
+    })
   }
 
   const porDia = [...porDiaMap.values()].sort((a, b) => a.dateKey.localeCompare(b.dateKey))
@@ -107,11 +105,25 @@ export function resumenMensual(planillas, fiadoPagos = []) {
 
   return {
     ...acc,
-    cobrado: acc.contado + acc.mercado + acc.anotado,
+    // Lo que se cobró en el momento de vender (sin los fiados).
+    cobrado: acc.contado + acc.mercado,
+    // Plata que entró este mes, incluidos los fiados que pagaron.
+    caja: {
+      contado: acc.contado + fiadoCobrado.contado,
+      mercado: acc.mercado + fiadoCobrado.mercado,
+      fiado: fiadoCobrado.total,
+      total: acc.contado + acc.mercado + fiadoCobrado.total,
+    },
     porDia,
     anotadoDetalle,
     fiadoCobrado,
     fiadoCobradoDetalle,
-    consumos: { ...consumos, ganancia: consumos.venta - consumos.costo },
+    consumos: {
+      ...consumos,
+      ganancia: consumos.venta - consumos.costo,
+      // Sin una sola venta con costo cargado no hay ganancia que mostrar: sería
+      // igual a lo vendido y daría a entender que la mercadería salió gratis.
+      hayCosto: consumos.conCosto > 0,
+    },
   }
 }
