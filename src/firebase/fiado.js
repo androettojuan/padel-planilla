@@ -15,12 +15,10 @@ import { clubCol, clubDoc, lsKey } from './paths'
 //     (contado/mercado), archivar hacía desaparecer esa plata de los totales del
 //     mes. Se quitó esa acción, pero los cortes existentes se siguen leyendo
 //     para que las cuentas archivadas antes no vuelvan a mostrar deuda vieja.
-//   fiadoArchivados/{nombreKey}  { nombreKey, nombre, fecha, ts }
-//     Marca de "limpiar de la vista", sin borrar NADA: los pagos y cargos siguen
-//     enteros y los totales por medio del resumen mensual no cambian. Solo mueve
-//     la cuenta a la sección "Archivados" del modal. Si después aparece un
-//     movimiento nuevo (o el saldo deja de ser 0), la cuenta vuelve sola a la
-//     lista principal para que una deuda nueva nunca quede escondida.
+//   fiadoArchivados/{nombreKey}
+//     HISTÓRICO: ya no se lee ni se escribe. Era una marca para sacar de la vista
+//     una cuenta saldada; sobraba, porque las cuentas en cero ya viven en
+//     "Saldados", que viene plegado.
 // El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos,
 // descontando lo archivado por el corte.
 // ---------------------------------------------------------------------------
@@ -70,7 +68,6 @@ export const deleteFiadoCargo = (clubId, id) => remove(clubId, 'fiadoCargos', id
 // Solo lectura: los cortes existentes se respetan, pero no se crean nuevos.
 export const loadFiadoCortes = (clubId) => load(clubId, 'fiadoCortes')
 
-export const loadFiadoArchivados = (clubId) => load(clubId, 'fiadoArchivados')
-export const saveFiadoArchivado = (clubId, a) => save(clubId, 'fiadoArchivados', a)
-export const deleteFiadoArchivado = (clubId, nombreKey) =>
-  remove(clubId, 'fiadoArchivados', nombreKey)
+// `fiadoArchivados` ya no se usa: archivar una cuenta saldada era una vuelta de
+// más, porque "Saldados" ya viene plegado. Los documentos que hayan quedado no
+// molestan —nadie los lee— y sus cuentas vuelven a aparecer entre las saldadas.

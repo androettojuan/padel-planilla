@@ -8,7 +8,9 @@ rules_version = '2';
 //   clubs/{clubId}/jugadores/{id}
 //   clubs/{clubId}/stock/{productoId}   { cantidad, costo, minimo, actualizado }
 //   clubs/{clubId}/stockCompras/{id}    { productoId, nombre, cantidad, costo, fecha, ts }
-//   clubs/{clubId}/fiadoPagos|fiadoCargos|fiadoCortes|fiadoArchivados/{id}
+//   clubs/{clubId}/fiadoPagos|fiadoCargos/{id}
+//   clubs/{clubId}/fiadoCortes|fiadoArchivados/{id}  históricos: la app ya no los
+//     escribe, pero siguen permitidos para no romper los datos que haya
 //
 // Acceso:
 //   - Miembro del club (existe su email en `miembros`): puede todo dentro de su

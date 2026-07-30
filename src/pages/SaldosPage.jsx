@@ -8,9 +8,6 @@ import {
   saveFiadoCargo,
   deleteFiadoCargo,
   loadFiadoCortes,
-  loadFiadoArchivados,
-  saveFiadoArchivado,
-  deleteFiadoArchivado,
 } from '../firebase/fiado'
 import { buildSaldos, aplicarPagosFIFO } from '../utils/saldos'
 import { descargarBoleta } from '../utils/boleta'
@@ -32,7 +29,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
   // plata desaparecía de los totales por medio del resumen mensual), pero se
   // siguen leyendo para que las cuentas archivadas antes no revivan su deuda.
   const [cortes, setCortes] = useState([])
-  const [archivados, setArchivados] = useState([]) // cuentas ocultas de la vista
   const [error, setError] = useState(null)
 
   const [busqueda, setBusqueda] = useState('')
@@ -40,7 +36,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
   const [cobrando, setCobrando] = useState(null) // nombreKey registrando pago
   const [monto, setMonto] = useState('')
   const [verSaldados, setVerSaldados] = useState(false)
-  const [verArchivados, setVerArchivados] = useState(false)
   const [verPagos, setVerPagos] = useState(null) // nombreKey con pagos desplegados
   const [confirmCargo, setConfirmCargo] = useState(null) // id del cargo a borrar
 
@@ -58,15 +53,13 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
       loadFiadoPagos(clubId),
       loadFiadoCargos(clubId),
       loadFiadoCortes(clubId),
-      loadFiadoArchivados(clubId),
     ])
-      .then(([p, f, c, ct, ar]) => {
+      .then(([p, f, c, ct]) => {
         if (!active) return
         setPlanillas(p)
         setFiadoPagos(f)
         setCargos(c)
         setCortes(ct)
-        setArchivados(ar)
       })
       .catch((e) => active && setError(e))
     return () => {
@@ -82,31 +75,18 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
   const q = normalizeNombre(busqueda)
   const matchNombre = (nombre) => !q || normalizeNombre(nombre).includes(q)
 
-  // Archivar es solo visual: no borra nada, solo saca la cuenta de las listas.
-  // Una cuenta archivada vuelve sola si su saldo deja de ser 0 o si aparece un
-  // movimiento posterior al archivado, así una deuda nueva nunca queda oculta.
-  const archivadoByKey = useMemo(
-    () => new Map(archivados.map((a) => [a.nombreKey, a])),
-    [archivados],
-  )
-  const estaArchivado = (s) => {
-    const a = archivadoByKey.get(s.nombreKey)
-    if (!a || s.saldo !== 0) return false
-    const fechaMov = (m) => m.dateKey || m.fecha || ''
-    return ![...s.cargos, ...s.pagos].some((m) => fechaMov(m) > (a.fecha || ''))
-  }
-
-  const visible = (s) => matchNombre(s.nombre) && !estaArchivado(s)
+  const visible = (s) => matchNombre(s.nombre)
 
   const deudores = saldos.filter((s) => s.saldo > 0 && visible(s))
   // Cuentas con plata a favor (pagaron de más): se muestran aparte y visibles,
   // no escondidas en "Saldados".
   const aFavor = saldos.filter((s) => s.saldo < 0 && visible(s))
-  // En "Saldados" quedan las cuentas en 0 con historial que no archivaste.
+  // Las cuentas en cero con historial quedan en "Saldados", plegado. Antes se
+  // podían archivar para sacarlas de ahí, pero era una vuelta de más: "Saldados"
+  // ya está plegado y nadie necesita esconder una cuenta que no debe nada.
   const saldados = saldos.filter(
     (s) => s.saldo === 0 && visible(s) && (s.cargos.length > 0 || s.pagos.length > 0),
   )
-  const archivadosList = saldos.filter((s) => matchNombre(s.nombre) && estaArchivado(s))
 
   const abrirCobro = (s) => {
     setExpandido(s.nombreKey)
@@ -182,32 +162,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
       await deleteFiadoCargo(clubId, id)
     } catch (e) {
       setCargos(prev)
-      setError(e)
-    }
-  }
-
-  // Oculta la cuenta de las listas. No toca pagos, cargos ni planillas: los
-  // totales por medio del resumen mensual quedan exactamente igual.
-  const archivarCuenta = async (s) => {
-    const a = { id: s.nombreKey, nombreKey: s.nombreKey, nombre: s.nombre, fecha: todayKey(), ts: Date.now() }
-    const prev = archivados
-    setArchivados((l) => [...l.filter((x) => x.nombreKey !== s.nombreKey), a])
-    setExpandido(null)
-    try {
-      await saveFiadoArchivado(clubId, a)
-    } catch (e) {
-      setArchivados(prev)
-      setError(e)
-    }
-  }
-
-  const restaurarCuenta = async (s) => {
-    const prev = archivados
-    setArchivados((l) => l.filter((x) => x.nombreKey !== s.nombreKey))
-    try {
-      await deleteFiadoArchivado(clubId, s.nombreKey)
-    } catch (e) {
-      setArchivados(prev)
       setError(e)
     }
   }
@@ -353,22 +307,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                   📄 Boleta
                 </button>
               </div>
-            ) : s.saldo === 0 && (s.cargos.length > 0 || s.pagos.length > 0) ? (
-              <div className="saldo__acciones">
-                {archivadoByKey.has(s.nombreKey) ? (
-                  <button className="btn btn--ghost-sm" onClick={() => restaurarCuenta(s)}>
-                    ↩️ Restaurar
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn--ghost-sm"
-                    onClick={() => archivarCuenta(s)}
-                    title="Saca la cuenta de la lista. No borra nada: el historial y los totales quedan intactos"
-                  >
-                    📦 Archivar
-                  </button>
-                )}
-              </div>
             ) : null}
           </div>
         )}
@@ -475,18 +413,6 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                 </div>
               )}
 
-              {archivadosList.length > 0 && (
-                <div className="cuentas__pagadas">
-                  <button className="cuentas__toggle" onClick={() => setVerArchivados((v) => !v)}>
-                    <span>
-                      {verArchivados ? '▾' : '▸'} Archivados ({archivadosList.length})
-                    </span>
-                  </button>
-                  {verArchivados && (
-                    <ul className="saldo-list">{archivadosList.map(renderItem)}</ul>
-                  )}
-                </div>
-              )}
             </>
           )}
     </>
