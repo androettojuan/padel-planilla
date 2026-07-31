@@ -906,6 +906,11 @@ select {
   z-index: 5;
   overflow-x: auto;
   overflow-y: hidden;
+  /* El respiro de arriba es para que las filas no pasen pegadas al encabezado
+     al desplazarse, pero no tiene que correr la tabla hacia abajo: el margen
+     negativo lo compensa, así los encabezados de cancha arrancan a la misma
+     altura que las tarjetas de la columna de al lado. */
+  margin-top: -6px;
   padding: 6px 0 4px;
   background: var(--surface-2);
   scrollbar-width: thin;
