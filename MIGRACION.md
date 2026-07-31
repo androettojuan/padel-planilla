@@ -56,6 +56,31 @@ En la app conviene mirar: que estén las canchas y los horarios, un par de días
 con turnos cargados, el resumen del último mes (que los totales sean los que el
 club ve hoy) y los fiados (que cada uno deba lo mismo).
 
+### Resultado del ensayo del 30/07/2026
+
+Se migró una copia de producción completa (338 documentos) y quedó todo bien.
+Sirve de referencia para comparar mañana: si estos números no cambian, la
+migración salió igual.
+
+| | |
+| --- | --- |
+| Documentos migrados | 334 (232 jugadores, 58 planillas, 19 cortes, 12 cargos, 12 pagos, 1 config) |
+| Miembros del club | 4, desde la allowlist |
+| Julio 2026 | facturado 2.717.500 · contado 1.305.500 · mercado 1.016.000 · anotado 319.000 · sin cobrar 77.000 |
+| Junio 2026 | facturado 2.604.000 · contado 1.355.400 · mercado 992.100 · anotado 256.500 |
+| Fiados | 301.500 entre 20 cuentas |
+
+Además se verificó en la app, con esos datos: la planilla del día, el resumen del
+mes, los fiados, la configuración de horarios (incluidos los de sábado y domingo,
+que el club tiene distintos), la boleta de un deudor real, y que se pueda
+**escribir** un turno con las reglas nuevas. Las 20 pruebas de reglas pasan.
+
+Sobre los 834 turnos cargados: todos son del modo clásico (por jugadores), así
+que se siguen viendo igual. Los 163 consumos no tienen costo —son anteriores al
+stock—, así que el resumen del mes no va a mostrar ganancia hasta que se carguen
+compras y se vendan productos nuevos. Las 4 planillas con cuentas de mostrador
+del modelo viejo se leen y suman igual que antes.
+
 ## Producción (a la mañana, con el club sin usar la app)
 
 ```bash

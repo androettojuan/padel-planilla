@@ -43,6 +43,22 @@ const leerCol = async (ruta) => {
   return new Map(snap.docs.map((d) => [d.id, encode(d.data())]))
 }
 
+/**
+ * Texto comparable de un documento, con las claves ordenadas en todos los
+ * niveles. Firestore no garantiza el orden de los campos al leerlos y no
+ * significa nada, así que compararlos tal cual daría diferencias que no lo son.
+ */
+function estable(valor) {
+  if (Array.isArray(valor)) return `[${valor.map(estable).join(',')}]`
+  if (valor && typeof valor === 'object') {
+    return `{${Object.keys(valor)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${estable(valor[k])}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(valor)
+}
+
 // ---------------------------------------------------------------------------
 // 1. Copia fiel: mismos documentos, con los mismos campos.
 //    Única diferencia esperada: config/club deja atrás `club` (nombre y
@@ -73,7 +89,7 @@ for (const col of hayOrigen ? COLECCIONES : []) {
   for (const [id, datos] of origen) {
     if (!destino.has(id)) continue
     const esperado = col === 'config' && id === 'club' ? sinClub(datos) : datos
-    if (JSON.stringify(esperado) !== JSON.stringify(destino.get(id))) distintos++
+    if (estable(esperado) !== estable(destino.get(id))) distintos++
   }
   if (distintos) falla(`${col}: ${distintos} documentos con contenido distinto`)
   if (!faltan.length && !distintos) console.log(`  ✓ ${col}: ${origen.size} documentos iguales`)
