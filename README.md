@@ -156,6 +156,14 @@ npm run db:migrate -- --limpiar               # recién después de verificar: b
 Opciones: `--club=carest`, `--nombre="Carest Padel"`, `--ubicacion="…"`.
 Los emails de `allowlist` se convierten en los miembros del club migrado.
 
+Después de migrar, `npm run db:check [-- --emulator]` verifica que la copia sea
+fiel: compara documento por documento y recalcula, **con el código de la app**,
+el resumen de cada mes y la deuda de fiados de los dos lados. Si algún número
+cambia, lo dice y termina con error.
+
+El paso a paso para migrar un club que ya está en uso —con backup, ensayo en el
+emulador y vuelta atrás— está en [MIGRACION.md](MIGRACION.md).
+
 ## Logo
 
 Colocá el logo del club en `public/logo.svg` y aparece en el header (y como
