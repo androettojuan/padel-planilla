@@ -261,7 +261,10 @@ function CampoNumero({ valor, onGuardar, label }) {
 
   const guardar = () => {
     setEditando(false)
-    if (texto !== String(valor)) onGuardar(texto)
+    // Un campo vacío es alguien que borró para escribir otra cosa y se fue, no
+    // un "cero unidades": se descarta y vuelve a mostrarse lo que había.
+    if (texto === '' || texto === String(valor)) return
+    onGuardar(texto)
   }
 
   return (

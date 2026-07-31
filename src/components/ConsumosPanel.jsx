@@ -13,7 +13,7 @@ import {
 } from '../utils/consumos'
 import { cantidadDe, costoDe } from '../utils/stock'
 import BotonBorrar from './BotonBorrar'
-import { RepartoChips, RepartoInput, RepartoPartes, useReparto } from './Reparto'
+import { RepartoChips, RepartoInput, useReparto } from './Reparto'
 
 export default function ConsumosPanel({
   config,
@@ -97,7 +97,7 @@ export default function ConsumosPanel({
 
       <div className="consumos__card">
         <div className="consumos__form">
-          <RepartoChips nombres={reparto.nombres} onQuitar={reparto.quitar} />
+          <RepartoChips reparto={reparto} />
           <RepartoInput
             reparto={reparto}
             sugerencias={sugerencias}
@@ -121,7 +121,6 @@ export default function ConsumosPanel({
               )
             })}
           </select>
-          <RepartoPartes reparto={reparto} label="Dividir entre" />
           {reparto.total > 1 && producto && (
             <p className="reparto__hint muted">
               {formatMoney(producto.precio)} ÷ {reparto.total} ={' '}
@@ -289,14 +288,16 @@ function DividirForm({ jugadores, precio, sugerencias, onCommitNombre, onCancel,
           </>
         )}
       </p>
-      <RepartoPartes reparto={reparto} label="Entre cuántos" />
-      <RepartoChips nombres={reparto.nombres} onQuitar={reparto.quitar} />
+      <RepartoChips reparto={reparto} />
       <RepartoInput
         reparto={reparto}
         sugerencias={sugerencias}
         onCommitNombre={onCommitNombre}
         placeholder="Sumar jugador (opcional)"
       />
+      <p className="reparto__hint muted">
+        El “+” suma el nombre que escribas; vacío, agrega una parte más sin nombre.
+      </p>
       <div className="dividir__acciones">
         <button
           className="btn btn--primary"

@@ -1276,19 +1276,24 @@ select {
   background: var(--surface);
   width: 100%;
 }
-/* Input de jugador + botón "+" para sumar otro al reparto. */
+/* Input de jugador + botón "+" para sumar otro al reparto. El botón se estira a
+   lo alto del campo: al lado de un cuadro de texto, un botón más bajo se lee
+   como si estuviera flotando. */
 .consumos__row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
-  align-items: center;
+  align-items: stretch;
 }
 .consumos__row .nombre-input {
   min-width: 0;
 }
 .reparto__add {
-  width: 34px;
-  font-size: 16px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  padding: 0;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
 }
@@ -1312,6 +1317,14 @@ select {
   font-size: 12px;
   font-weight: 600;
 }
+/* Una parte del reparto que todavía no tiene nombre: se ve que está, pero sin
+   competir con los nombres cargados. */
+.reparto__chip--anon {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-soft);
+  font-weight: 500;
+}
 .reparto__del {
   border: none;
   background: transparent;
@@ -1328,18 +1341,6 @@ select {
   margin: 0;
 }
 /* Entre cuántos se divide el consumo que se está cargando. */
-.partes {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.partes__label {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-
 .consumos__list {
   list-style: none;
   margin: 0;
