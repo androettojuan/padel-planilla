@@ -4,9 +4,11 @@ import { aplicarPagosFIFO } from './saldos'
 // Genera la boleta de fiado de una persona como imagen PNG para enviar por
 // WhatsApp. Se dibuja todo a mano sobre un <canvas> (sin dependencias) con el
 // detalle de lo que debe: cargos, pagos a cuenta y saldo final.
+//
+// El encabezado y el alias salen del club activo: cada uno manda la suya con su
+// nombre y su alias para transferir.
 
-const NEGOCIO = 'CAREST PADEL'
-const SUBTITULO = 'General Levalle - Cba.'
+const NEGOCIO = 'CLUB'
 
 const COLORS = {
   brand: '#d11f2a', // rojo de la marca
@@ -29,10 +31,17 @@ function truncar(ctx, texto, maxWidth) {
   return t + '…'
 }
 
-// Dibuja la boleta y devuelve el <canvas> listo para exportar.
-export function boletaCanvas(saldo) {
+/**
+ * Dibuja la boleta y devuelve el <canvas> listo para exportar.
+ *
+ * `emisor` es el club que la manda: { nombre, ubicacion, alias }.
+ */
+export function boletaCanvas(saldo, emisor = {}) {
   const cargos = aplicarPagosFIFO(saldo.cargos, saldo.pagos)
   const movs = cargos.length
+  const negocio = (emisor.nombre || '').trim().toUpperCase() || NEGOCIO
+  const subtitulo = (emisor.ubicacion || '').trim()
+  const alias = (emisor.alias || '').trim()
 
   const dpr = 2
   const W = 560
@@ -40,9 +49,9 @@ export function boletaCanvas(saldo) {
   const headerH = 104
   const rowH = 32
 
-  // Alto dinámico según la cantidad de movimientos.
+  // Alto dinámico según la cantidad de movimientos y si hay alias que mostrar.
   const yMovsStart = headerH + 32 + 34 + 52 + 28
-  const H = yMovsStart + movs * rowH + 20 + 70 + 44
+  const H = yMovsStart + movs * rowH + 20 + 70 + 44 + (alias ? 58 : 0)
 
   const canvas = document.createElement('canvas')
   canvas.width = W * dpr
@@ -61,11 +70,13 @@ export function boletaCanvas(saldo) {
   ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'left'
   ctx.font = `800 34px ${FONT}`
-  ctx.fillText(NEGOCIO, pad, 52)
-  ctx.font = `600 15px ${FONT}`
-  ctx.globalAlpha = 0.92
-  ctx.fillText(SUBTITULO, pad, 78)
-  ctx.globalAlpha = 1
+  ctx.fillText(truncar(ctx, negocio, W - pad * 2), pad, 52)
+  if (subtitulo) {
+    ctx.font = `600 15px ${FONT}`
+    ctx.globalAlpha = 0.92
+    ctx.fillText(truncar(ctx, subtitulo, W - pad * 2), pad, 78)
+    ctx.globalAlpha = 1
+  }
 
   let y = headerH + 38
 
@@ -148,6 +159,22 @@ export function boletaCanvas(saldo) {
   ctx.fillText(formatMoney(Math.max(0, saldo.saldo)), xMonto, y)
   ctx.textAlign = 'left'
 
+  // Dónde transferir. Va en un recuadro para que se lea de un vistazo: es lo que
+  // necesita quien recibe la boleta para poder pagar.
+  if (alias) {
+    y += 22
+    const cajaH = 58
+    ctx.fillStyle = '#f6f7f9'
+    ctx.fillRect(pad, y, W - pad * 2, cajaH)
+    ctx.fillStyle = COLORS.sub
+    ctx.font = `700 11px ${FONT}`
+    ctx.fillText('PARA TRANSFERIR', pad + 14, y + 22)
+    ctx.fillStyle = COLORS.ink
+    ctx.font = `700 18px ${FONT}`
+    ctx.fillText(truncar(ctx, alias, W - pad * 2 - 28), pad + 14, y + 45)
+    y += cajaH
+  }
+
   // Pie
   y += 36
   ctx.fillStyle = COLORS.sub
@@ -160,8 +187,8 @@ export function boletaCanvas(saldo) {
 }
 
 // Genera y descarga la boleta de la persona como PNG.
-export function descargarBoleta(saldo) {
-  const canvas = boletaCanvas(saldo)
+export function descargarBoleta(saldo, emisor) {
+  const canvas = boletaCanvas(saldo, emisor)
   const nombre = (saldo.nombre || 'cliente').trim().replace(/[^\w.-]+/g, '_')
   const finish = (url, revoke) => {
     const a = document.createElement('a')

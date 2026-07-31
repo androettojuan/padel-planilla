@@ -8,7 +8,7 @@ import SaldosPage from './SaldosPage'
  * cobrar. Son dos vistas de lo mismo, así que comparten sección y se alternan
  * con las solapas de arriba en vez de estar en dos botones separados.
  */
-export default function FinanzasPage({ monthKey, jugadores, sugerencias, onCommitNombre }) {
+export default function FinanzasPage({ config, monthKey, jugadores, sugerencias, onCommitNombre }) {
   const [vista, setVista] = useState('mes')
 
   return (
@@ -36,6 +36,7 @@ export default function FinanzasPage({ monthKey, jugadores, sugerencias, onCommi
         <ResumenMensualPage monthKey={monthKey} />
       ) : (
         <SaldosPage
+          config={config}
           jugadores={jugadores}
           sugerencias={sugerencias}
           onCommitNombre={onCommitNombre}

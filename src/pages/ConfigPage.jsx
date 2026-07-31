@@ -314,6 +314,18 @@ export default function ConfigPage({ config, club, onSave, onSaveClub, bloquearS
                 onChange={(e) => setClubDraft((c) => ({ ...c, ubicacion: e.target.value }))}
               />
             </div>
+            <div className="cfg-row">
+              <input
+                className="cfg-input"
+                placeholder="Alias o CBU para transferencias"
+                value={draft.alias || ''}
+                onChange={(e) => set({ alias: e.target.value })}
+              />
+            </div>
+            <p className="cfg-hint">
+              El alias aparece en la boleta de fiado, así el que la recibe sabe a dónde
+              transferir. Si lo dejás vacío, la boleta sale sin esa línea.
+            </p>
           </section>
 
           {/* Canchas */}

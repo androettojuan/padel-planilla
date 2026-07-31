@@ -20,7 +20,7 @@ import {
   normalizeNombre,
   soloDigitos,
 } from '../utils/helpers'
-import { useClubId } from '../hooks/useClub'
+import { useClub } from '../hooks/useClub'
 import BotonBorrar from '../components/BotonBorrar'
 import NombreInput from '../components/NombreInput'
 
@@ -28,8 +28,11 @@ import NombreInput from '../components/NombreInput'
 // justamente lo que genera la deuda).
 const MEDIOS_PAGO = PAGOS.filter((p) => p.id !== 'anotado')
 
-export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitNombre }) {
-  const clubId = useClubId()
+export default function SaldosPage({ config, jugadores = [], sugerencias = [], onCommitNombre }) {
+  const { clubId, club } = useClub()
+  // Quién firma la boleta: el club activo, con el alias donde recibe las
+  // transferencias.
+  const emisor = { nombre: club?.nombre, ubicacion: club?.ubicacion, alias: config?.alias }
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
   const [cargos, setCargos] = useState([]) // deudas cargadas a mano
@@ -276,7 +279,7 @@ export default function SaldosPage({ jugadores = [], sugerencias = [], onCommitN
                 </button>
                 <button
                   className="btn btn--ghost-sm"
-                  onClick={() => descargarBoleta(s)}
+                  onClick={() => descargarBoleta(s, emisor)}
                   title="Descargar imagen para enviar por WhatsApp"
                 >
                   📄 Boleta

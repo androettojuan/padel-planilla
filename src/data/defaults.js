@@ -39,6 +39,9 @@ export const DEFAULT_CONFIG = {
     { id: 'p6', nombre: 'Alquiler paletas', precio: 3000 },
     { id: 'p7', nombre: 'Tubo de pelotas', precio: 12000 },
   ],
+  // Alias o CBU donde el club recibe transferencias. Va en la boleta de fiado,
+  // que es lo que se le manda a quien tiene que pagar.
+  alias: '',
 }
 
 // Etiqueta legible de una franja. Soporta el formato nuevo (desde/hasta) y el

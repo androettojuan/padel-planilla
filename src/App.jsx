@@ -229,6 +229,7 @@ export default function App() {
 
         {ruta === 'finanzas' && (
           <FinanzasPage
+            config={config}
             monthKey={dateKey.slice(0, 7)}
             jugadores={jugadores}
             sugerencias={sugerencias}
