@@ -14,6 +14,7 @@
     "db:demo": "node scripts/seed-demo.mjs",
     "db:migrate": "node scripts/migrate-multiclub.mjs",
     "db:check": "node scripts/check-migracion.mjs",
+    "db:restore": "node scripts/restore-prod.mjs",
     "test:rules": "node scripts/test-rules.mjs"
   },
   "dependencies": {

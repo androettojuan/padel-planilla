@@ -5,6 +5,11 @@
 //   node scripts/check-migracion.mjs --emulator          ← después del ensayo
 //   node scripts/check-migracion.mjs                     ← contra PRODUCCIÓN (solo lee)
 //
+// Correrlo apenas termina la migración, ANTES de que alguien use la app nueva:
+// desde el primer turno que se cargue, la base migrada se separa de las
+// colecciones viejas con todo derecho y las diferencias que reporte dejan de
+// significar algo.
+//
 // Opciones: --club=carest
 //
 // No escribe nada, ni en el emulador ni en producción.

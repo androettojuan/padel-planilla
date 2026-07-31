@@ -83,43 +83,74 @@ del modelo viejo se leen y suman igual que antes.
 
 ## Producción (a la mañana, con el club sin usar la app)
 
+La app **no se publica a mano**: sale sola a GitHub Pages cuando se pushea a
+`master`, y el build tarda unos minutos. Las reglas sí van con `firebase deploy`
+y son instantáneas. Entre una cosa y la otra hay un rato en que la app publicada
+y las reglas no se corresponden; por eso se hace temprano y de un tirón.
+
 ```bash
 # 1. Backup fresco, con lo que se haya cargado anoche
 npm run db:dump -- --out=firestore-dump/backup-$(date +%F)-prod.json
 
-# 2. Migrar (copia; no borra nada)
+# 2. Migrar (copia; no borra nada de la raíz)
 npm run db:migrate -- --dry-run
 npm run db:migrate
 
-# 3. Verificar antes de publicar
+# 3. Verificar AHORA, antes de que nadie abra la app nueva
 npm run db:check
 
-# 4. Publicar reglas y app juntas
-npm run build
-firebase deploy --only firestore:rules,hosting
+# 4. Publicar la app: al pushear master, GitHub Actions la construye y sube
+git checkout master && git merge feat/multi-club && git push
+
+# 5. Apenas termine el build (mirar la pestaña Actions del repo), las reglas
+firebase deploy --only firestore:rules
 ```
 
-Después: entrar a la app con la cuenta del club y repetir la revisión a ojo del
-ensayo. Y avisarle al club que si tenía la página abierta, la recargue.
+El paso 3 va antes del 4 por algo: en cuanto se carga el primer turno con la app
+nueva, la base migrada se separa de las colecciones viejas con todo derecho, y
+las diferencias que reporte `db:check` dejan de significar algo.
+
+Después: entrar con la cuenta del club y repetir la revisión a ojo del ensayo
+(planilla del día, resumen del mes, fiados, y cargar un turno de prueba y
+borrarlo). En los teléfonos y la tablet del club, cerrar y volver a abrir la app:
+es una PWA y la versión vieja puede quedar cacheada.
 
 ## Si algo sale mal
 
-El backup del paso 1 se vuelve a cargar con `db:seed` apuntando a producción, pero
-**antes de eso** está el camino corto: las colecciones viejas siguen intactas, así
-que alcanza con volver a la versión anterior de la app y a sus reglas.
+Primero el camino corto: las colecciones viejas siguen intactas, así que se
+vuelve a la versión anterior publicando `master` como estaba y sus reglas.
 
 ```bash
-git checkout master -- firestore.rules   # reglas del modelo viejo
-git stash                                # guardar el código nuevo
-git checkout master
-npm run build
-firebase deploy --only firestore:rules,hosting
+git revert -m 1 HEAD && git push        # deshace el merge; Pages reconstruye
+git checkout <commit-anterior> -- firestore.rules
+firebase deploy --only firestore:rules
 ```
+
+Y si hubiera que reponer datos, el backup se restaura con:
+
+```bash
+npm run db:restore -- --in=firestore-dump/backup-AAAA-MM-DD-prod.json --si
+```
+
+Pide escribir `RESTAURAR` a mano, guarda antes una copia de cómo está la base en
+ese momento (`firestore-dump/antes-de-restaurar-*.json`) y por defecto **solo
+escribe lo que hay en el backup, sin borrar nada** que se haya cargado después.
+Con `--exacto` además borra lo que no figure en el backup, dejando la base igual
+a esa foto.
+
+Está probado: se borraron a propósito 6 cargos de fiado del emulador y la
+restauración los repuso.
 
 ## Cuando ya esté todo tranquilo
 
-Recién ahí, borrar las colecciones viejas de la raíz:
+Recién ahí —después de varios días de uso normal, no el mismo día— borrar las
+colecciones viejas de la raíz. Mientras no se corra esto, hay dos copias de todo
+y volver atrás sigue siendo gratis.
 
 ```bash
 npm run db:migrate -- --limpiar
 ```
+
+Es lo único de todo este procedimiento que borra datos. El backup del día de la
+migración conviene guardarlo aparte del repo (mail, Drive, un pendrive) antes de
+llegar a este paso.
