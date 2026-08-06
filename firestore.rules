@@ -1,49 +1,105 @@
 rules_version = '2';
 
-// Acceso restringido por allowlist: solo entran los usuarios cuyo email esté
-// en la colección `allowlist` (administrada por el dueño desde la consola).
-// La allowlist no se puede escribir desde el cliente, así que "desactivar la
-// creación de cuentas" es simplemente no agregar más emails.
+// Modelo multi-club. Todos los datos de un club viven bajo clubs/{clubId}:
+//   clubs/{clubId}                  { nombre, ubicacion, activo, creado }
+//   clubs/{clubId}/miembros/{email} { email, nombre?, creado }
+//   clubs/{clubId}/config/club      canchas, horarios, productos
+//   clubs/{clubId}/planillas/{YYYY-MM-DD}
+//   clubs/{clubId}/jugadores/{id}
+//   clubs/{clubId}/stock/{productoId}   { cantidad, costo, minimo, actualizado }
+//   clubs/{clubId}/stockCompras/{id}    { productoId, nombre, cantidad, costo, fecha, ts }
+//   clubs/{clubId}/fiadoPagos|fiadoCargos/{id}
+//   clubs/{clubId}/fiadoCortes|fiadoArchivados/{id}  históricos: la app ya no los
+//     escribe, pero siguen permitidos para no romper los datos que haya
+//
+// Acceso:
+//   - Miembro del club (existe su email en `miembros`): puede todo dentro de su
+//     club, salvo dar de alta/baja usuarios y borrar el club.
+//   - Super admin (existe su email en `superAdmins`): crea clubes y administra
+//     los miembros de cada uno. La colección `superAdmins` no se escribe desde
+//     la app: se carga a mano desde la consola de Firebase.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAllowed() {
+    function userEmail() {
+      return request.auth != null ? request.auth.token.email : '';
+    }
+
+    function isSuperAdmin() {
       return request.auth != null
-        && exists(/databases/$(database)/documents/allowlist/$(request.auth.token.email));
+        && exists(/databases/$(database)/documents/superAdmins/$(userEmail()));
     }
 
-    match /config/{doc} {
-      allow read, write: if isAllowed();
+    function isMember(clubId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/miembros/$(userEmail()));
     }
 
-    match /planillas/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    match /jugadores/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    match /fiadoPagos/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    match /fiadoCargos/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    match /fiadoCortes/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    match /fiadoArchivados/{doc} {
-      allow read, write: if isAllowed();
-    }
-
-    // Cada usuario puede consultar solo su propia entrada (para saber si está
-    // habilitado). El alta/baja se hace desde la consola, nunca desde la app.
-    match /allowlist/{email} {
-      allow read: if request.auth != null && request.auth.token.email == email;
+    // Cada usuario puede leer solo su propia entrada (para saber si es super
+    // admin). El alta/baja se hace desde la consola, nunca desde la app.
+    match /superAdmins/{docEmail} {
+      allow read: if request.auth != null && userEmail() == docEmail;
       allow write: if false;
+    }
+
+    match /clubs/{clubId} {
+      allow read: if isMember(clubId) || isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      // El club puede editar sus propios datos de presentación; el resto
+      // (activo, creado) queda reservado al super admin.
+      allow update: if isSuperAdmin()
+        || (isMember(clubId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['nombre', 'ubicacion']));
+
+      // Los miembros ven quién más está en el club, pero solo el super admin
+      // da de alta o de baja.
+      match /miembros/{docEmail} {
+        allow read: if isMember(clubId) || isSuperAdmin();
+        allow write: if isSuperAdmin();
+      }
+
+      match /config/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /planillas/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /jugadores/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /stock/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /stockCompras/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /fiadoPagos/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /fiadoCargos/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /fiadoCortes/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+
+      match /fiadoArchivados/{doc} {
+        allow read, write: if isMember(clubId);
+      }
+    }
+
+    // Al iniciar sesión la app pregunta "¿a qué clubes pertenezco?" con una
+    // consulta de grupo de colecciones sobre `miembros` filtrada por email.
+    // La regla solo autoriza esa consulta: nunca listar miembros ajenos.
+    match /{path=**}/miembros/{docEmail} {
+      allow read: if request.auth != null && resource.data.email == userEmail();
     }
   }
 }

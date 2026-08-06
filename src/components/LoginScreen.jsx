@@ -1,8 +1,8 @@
 // Pantalla previa al ingreso. Dos estados:
 //  - sin usuario: botón para iniciar sesión con Google.
-//  - con usuario pero no autorizado: aviso para pedir acceso al administrador.
-export default function LoginScreen({ user, onSignIn, onSignOut, error, club }) {
-  const noAutorizado = !!user
+//  - con usuario pero sin club: su email todavía no fue agregado a ningún club.
+export default function LoginScreen({ user, onSignIn, onSignOut, error }) {
+  const sinClub = !!user
 
   return (
     <div className="login">
@@ -13,14 +13,16 @@ export default function LoginScreen({ user, onSignIn, onSignOut, error, club }) 
           alt=""
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />
-        <h1 className="login__title">{club?.nombre || 'Planilla de Turnos'}</h1>
+        <h1 className="login__title">Planilla de Turnos</h1>
 
-        {noAutorizado ? (
+        {sinClub ? (
           <>
             <p className="login__text">
-              Tu cuenta <b>{user.email}</b> todavía no está autorizada para usar la planilla.
+              Tu cuenta <b>{user.email}</b> todavía no está habilitada en ningún club.
             </p>
-            <p className="login__hint">Pedile al administrador que te habilite el acceso.</p>
+            <p className="login__hint">
+              Pedile al administrador que te agregue al club para el que vas a trabajar.
+            </p>
             <button className="btn" onClick={onSignOut}>
               Cerrar sesión
             </button>

@@ -1,4 +1,12 @@
-import { turnoKey, horarioLabel } from '../data/defaults'
+import { turnoKey, horarioLabel, buscarFranja } from '../data/defaults'
+import { duenioDeGrupo, esConsumoSuelto, grupoDe, MOSTRADOR_LABEL } from './consumos'
+import {
+  agregarPago,
+  lineasDeTurno,
+  pagosDe,
+  saldoTurno,
+  tienePagos,
+} from './turnos'
 
 // Nombre que agrupa las líneas sin jugador asignado.
 export const SIN_ASIGNAR = ''
@@ -18,37 +26,72 @@ const sumConsumos = (arr) =>
  *
  * Así, agregar un consumo nuevo a un jugador ya cobrado genera una cuenta
  * pendiente nueva por ese consumo, sin tocar lo ya pagado.
+ *
+ * Los consumos de mostrador (gente que no jugaba) no se agrupan: cada venta es
+ * su propia cuenta, porque cada persona de afuera paga lo suyo y se va. Por eso
+ * cada cuenta lleva `key`, que es con lo que se la identifica para cobrarla.
  */
 export function buildCuentas(planilla, config) {
   const canchas = config?.canchas || []
-  const horarios = config?.horarios || []
   const canchaNombre = (id) => canchas.find((c) => c.id === id)?.nombre || id
-  const horarioDe = (id) => horarioLabel(horarios.find((h) => h.id === id))
+  // La franja se busca primero en la cancha del turno, que puede tener horario
+  // propio, y si no aparece ahí se cae a las listas del club.
+  const horarioDe = (canchaId, horarioId) =>
+    horarioLabel(buscarFranja(config, canchaId, horarioId))
 
   const groups = new Map()
-  const getGroup = (nombre) => {
-    if (!groups.has(nombre)) groups.set(nombre, { nombre, turnos: [], consumos: [] })
-    return groups.get(nombre)
+  const getGroup = (key, extra = {}) => {
+    if (!groups.has(key)) groups.set(key, { key, turnos: [], consumos: [], ...extra })
+    return groups.get(key)
   }
+  // Los consumos sin dueño —una venta de mostrador, o la parte de algo dividido
+  // sin decir entre quiénes— van cada uno en su propia cuenta: nadie puede
+  // cobrarlos juntos porque no se sabe si son de la misma persona. El resto se
+  // junta por jugador, como siempre.
+  const consumosTodos = planilla?.consumos || []
+  const grupoDeConsumo = (c) =>
+    esConsumoSuelto(c)
+      ? getGroup(`suelto#${c.id}`, {
+          nombre: c.mostrador ? MOSTRADOR_LABEL : '',
+          mostrador: !!c.mostrador,
+          suelto: true,
+          // De quién es el producto compartido, para no perder de vista que esta
+          // parte suelta salió del turno de alguien.
+          referencia: duenioDeGrupo(grupoDe(consumosTodos, c)),
+        })
+      : getGroup(nombreDe(c), { nombre: nombreDe(c) })
 
   for (const [key, lista] of Object.entries(planilla?.turnos || {})) {
     const [canchaId, horarioId] = key.split('__')
     for (const item of lista) {
-      getGroup(nombreDe(item)).turnos.push({
-        ...item,
-        canchaId,
-        horarioId,
-        canchaNombre: canchaNombre(canchaId),
-        horario: horarioDe(horarioId),
-      })
+      // Un turno de reserva se abre en una línea por pago más lo que falte, cada
+      // una a nombre de quien corresponda: así cada uno ve en su cuenta lo suyo.
+      for (const linea of lineasDeTurno(item)) {
+        getGroup(nombreDe(linea), { nombre: nombreDe(linea) }).turnos.push({
+          ...linea,
+          canchaId,
+          horarioId,
+          canchaNombre: canchaNombre(canchaId),
+          horario: horarioDe(canchaId, horarioId),
+        })
+      }
     }
   }
   for (const c of planilla?.consumos || []) {
-    getGroup(nombreDe(c)).consumos.push(c)
+    grupoDeConsumo(c).consumos.push(c)
   }
 
   const cuentas = []
   for (const g of groups.values()) {
+    // Lo que identifica a la cuenta, igual para la pendiente y las ya cobradas.
+    const quien = {
+      key: g.key,
+      nombre: g.nombre,
+      mostrador: !!g.mostrador,
+      suelto: !!g.suelto,
+      referencia: g.referencia || '',
+    }
+
     // Cuenta pendiente: lo que todavía no se cobró del jugador.
     const turnosPend = g.turnos.filter((t) => !t.pagado)
     const consumosPend = g.consumos.filter((c) => !c.pagado)
@@ -56,7 +99,7 @@ export function buildCuentas(planilla, config) {
     const totalConsumos = sumConsumos(consumosPend)
     if (totalTurnos + totalConsumos > 0 || consumosPend.length > 0) {
       cuentas.push({
-        nombre: g.nombre,
+        ...quien,
         turnos: turnosPend,
         consumos: consumosPend,
         totalTurnos,
@@ -80,7 +123,7 @@ export function buildCuentas(planilla, config) {
       const tt = sumTurnos(grp.turnos)
       const tc = sumConsumos(grp.consumos)
       cuentas.push({
-        nombre: g.nombre,
+        ...quien,
         turnos: grp.turnos,
         consumos: grp.consumos,
         totalTurnos: tt,
@@ -99,12 +142,21 @@ export function buildCuentas(planilla, config) {
   })
 }
 
-// Cobra o revierte el pago del jugador, sin tocar otros cobros suyos.
+// Cobra o revierte el pago de una cuenta, sin tocar otros cobros suyos.
 // Al cobrar (pagado=true) marca solo las líneas todavía pendientes con `medio`.
 // Al revertir (pagado=false) afecta solo las líneas cobradas con ese `medio`.
-export function aplicarPago(planilla, nombre, medio, pagado) {
-  const objetivo = (nombre || '').trim()
-  const pertenece = (item) => (item?.jugador || '').trim() === objetivo
+//
+// `cuenta` es una de las que devuelve buildCuentas: la de un jugador afecta sus
+// líneas por nombre, y la de mostrador solo la venta suelta que la originó.
+export function aplicarPago(planilla, cuenta, medio, pagado) {
+  const objetivo = (cuenta?.nombre || '').trim()
+  const idsSueltos = new Set((cuenta?.consumos || []).map((c) => c.id))
+  const pertenece = cuenta?.suelto
+    ? (item) => esConsumoSuelto(item) && idsSueltos.has(item.id)
+    : // Los consumos sueltos quedan afuera de las cuentas por nombre: sin esto, la
+      // de "Sin asignar" (jugador vacío) se llevaría también los que no tienen
+      // nombre a propósito y se cobran uno a uno.
+      (item) => !esConsumoSuelto(item) && nombreDe(item) === objetivo
   const afecta = pagado
     ? (item) => pertenece(item) && !item.pagado
     : (item) => pertenece(item) && item.pagado && item.pago === medio
@@ -115,9 +167,25 @@ export function aplicarPago(planilla, nombre, medio, pagado) {
         : { ...item, pagado: false, pago: null }
       : item
 
+  // En un turno de reserva no se marca una línea como pagada: se le agrega un
+  // pago por lo que falta (o se le sacan los pagos de esa persona al revertir),
+  // que es como se cobra desde la planilla.
+  const aplicarTurno = (t) => {
+    if (!tienePagos(t)) return aplicar(t)
+    if (pagado) {
+      const falta = saldoTurno(t)
+      if (!pertenece(t) || falta <= 0) return t
+      return agregarPago(t, { nombre: t.jugador, monto: falta, pago: medio })
+    }
+    const quedan = pagosDe(t).filter(
+      (p) => p.pago !== medio || ((p.nombre || '').trim() || (t.jugador || '').trim()) !== objetivo,
+    )
+    return quedan.length === pagosDe(t).length ? t : { ...t, pagos: quedan }
+  }
+
   const turnos = {}
   for (const [key, lista] of Object.entries(planilla.turnos || {})) {
-    turnos[key] = lista.map(aplicar)
+    turnos[key] = lista.map(aplicarTurno)
   }
   const consumos = (planilla.consumos || []).map(aplicar)
 

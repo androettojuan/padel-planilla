@@ -8,21 +8,31 @@ import {
   saveFiadoCargo,
   deleteFiadoCargo,
   loadFiadoCortes,
-  loadFiadoArchivados,
-  saveFiadoArchivado,
-  deleteFiadoArchivado,
 } from '../firebase/fiado'
 import { buildSaldos, aplicarPagosFIFO } from '../utils/saldos'
 import { descargarBoleta } from '../utils/boleta'
 import { PAGOS } from '../data/defaults'
-import { uid, formatMoney, formatDateNumeric, todayKey, normalizeNombre } from '../utils/helpers'
-import NombreInput from './NombreInput'
+import {
+  uid,
+  formatMoney,
+  formatDateNumeric,
+  todayKey,
+  normalizeNombre,
+  soloDigitos,
+} from '../utils/helpers'
+import { useClub } from '../hooks/useClub'
+import BotonBorrar from '../components/BotonBorrar'
+import NombreInput from '../components/NombreInput'
 
 // Medios con los que se puede saldar un fiado (todos menos "Anotado", que es
 // justamente lo que genera la deuda).
 const MEDIOS_PAGO = PAGOS.filter((p) => p.id !== 'anotado')
 
-export default function SaldosModal({ jugadores = [], sugerencias = [], onCommitNombre, onClose }) {
+export default function SaldosPage({ config, jugadores = [], sugerencias = [], onCommitNombre }) {
+  const { clubId, club } = useClub()
+  // Quién firma la boleta: el club activo, con el alias donde recibe las
+  // transferencias.
+  const emisor = { nombre: club?.nombre, ubicacion: club?.ubicacion, alias: config?.alias }
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
   const [cargos, setCargos] = useState([]) // deudas cargadas a mano
@@ -30,7 +40,6 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   // plata desaparecía de los totales por medio del resumen mensual), pero se
   // siguen leyendo para que las cuentas archivadas antes no revivan su deuda.
   const [cortes, setCortes] = useState([])
-  const [archivados, setArchivados] = useState([]) // cuentas ocultas de la vista
   const [error, setError] = useState(null)
 
   const [busqueda, setBusqueda] = useState('')
@@ -38,9 +47,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   const [cobrando, setCobrando] = useState(null) // nombreKey registrando pago
   const [monto, setMonto] = useState('')
   const [verSaldados, setVerSaldados] = useState(false)
-  const [verArchivados, setVerArchivados] = useState(false)
   const [verPagos, setVerPagos] = useState(null) // nombreKey con pagos desplegados
-  const [confirmCargo, setConfirmCargo] = useState(null) // id del cargo a borrar
 
   // Formulario para cargar una deuda a mano.
   const [agregando, setAgregando] = useState(false)
@@ -52,25 +59,23 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   useEffect(() => {
     let active = true
     Promise.all([
-      loadAllPlanillas(),
-      loadFiadoPagos(),
-      loadFiadoCargos(),
-      loadFiadoCortes(),
-      loadFiadoArchivados(),
+      loadAllPlanillas(clubId),
+      loadFiadoPagos(clubId),
+      loadFiadoCargos(clubId),
+      loadFiadoCortes(clubId),
     ])
-      .then(([p, f, c, ct, ar]) => {
+      .then(([p, f, c, ct]) => {
         if (!active) return
         setPlanillas(p)
         setFiadoPagos(f)
         setCargos(c)
         setCortes(ct)
-        setArchivados(ar)
       })
       .catch((e) => active && setError(e))
     return () => {
       active = false
     }
-  }, [])
+  }, [clubId])
 
   const { saldos, totalDeuda } = useMemo(
     () => buildSaldos(planillas || [], fiadoPagos, jugadores, cargos, cortes),
@@ -80,31 +85,16 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   const q = normalizeNombre(busqueda)
   const matchNombre = (nombre) => !q || normalizeNombre(nombre).includes(q)
 
-  // Archivar es solo visual: no borra nada, solo saca la cuenta de las listas.
-  // Una cuenta archivada vuelve sola si su saldo deja de ser 0 o si aparece un
-  // movimiento posterior al archivado, así una deuda nueva nunca queda oculta.
-  const archivadoByKey = useMemo(
-    () => new Map(archivados.map((a) => [a.nombreKey, a])),
-    [archivados],
-  )
-  const estaArchivado = (s) => {
-    const a = archivadoByKey.get(s.nombreKey)
-    if (!a || s.saldo !== 0) return false
-    const fechaMov = (m) => m.dateKey || m.fecha || ''
-    return ![...s.cargos, ...s.pagos].some((m) => fechaMov(m) > (a.fecha || ''))
-  }
-
-  const visible = (s) => matchNombre(s.nombre) && !estaArchivado(s)
-
-  const deudores = saldos.filter((s) => s.saldo > 0 && visible(s))
+  const deudores = saldos.filter((s) => s.saldo > 0 && matchNombre(s.nombre))
   // Cuentas con plata a favor (pagaron de más): se muestran aparte y visibles,
   // no escondidas en "Saldados".
-  const aFavor = saldos.filter((s) => s.saldo < 0 && visible(s))
-  // En "Saldados" quedan las cuentas en 0 con historial que no archivaste.
+  const aFavor = saldos.filter((s) => s.saldo < 0 && matchNombre(s.nombre))
+  // Las cuentas en cero con historial quedan en "Saldados", plegado. Antes se
+  // podían archivar para sacarlas de ahí, pero era una vuelta de más: "Saldados"
+  // ya está plegado y nadie necesita esconder una cuenta que no debe nada.
   const saldados = saldos.filter(
-    (s) => s.saldo === 0 && visible(s) && (s.cargos.length > 0 || s.pagos.length > 0),
+    (s) => s.saldo === 0 && matchNombre(s.nombre) && (s.cargos.length > 0 || s.pagos.length > 0),
   )
-  const archivadosList = saldos.filter((s) => matchNombre(s.nombre) && estaArchivado(s))
 
   const abrirCobro = (s) => {
     setExpandido(s.nombreKey)
@@ -128,7 +118,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     setCobrando(null)
     setMonto('')
     try {
-      await saveFiadoPago(pago)
+      await saveFiadoPago(clubId, pago)
     } catch (e) {
       setFiadoPagos((prev) => prev.filter((p) => p.id !== pago.id))
       setError(e)
@@ -139,7 +129,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     const prev = fiadoPagos
     setFiadoPagos((l) => l.filter((p) => p.id !== id))
     try {
-      await deleteFiadoPago(id)
+      await deleteFiadoPago(clubId, id)
     } catch (e) {
       setFiadoPagos(prev)
       setError(e)
@@ -166,7 +156,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     setCgConcepto('')
     setCgMonto('')
     try {
-      await saveFiadoCargo(cargo)
+      await saveFiadoCargo(clubId, cargo)
     } catch (e) {
       setCargos((prev) => prev.filter((c) => c.id !== cargo.id))
       setError(e)
@@ -177,35 +167,9 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
     const prev = cargos
     setCargos((l) => l.filter((c) => c.id !== id))
     try {
-      await deleteFiadoCargo(id)
+      await deleteFiadoCargo(clubId, id)
     } catch (e) {
       setCargos(prev)
-      setError(e)
-    }
-  }
-
-  // Oculta la cuenta de las listas. No toca pagos, cargos ni planillas: los
-  // totales por medio del resumen mensual quedan exactamente igual.
-  const archivarCuenta = async (s) => {
-    const a = { id: s.nombreKey, nombreKey: s.nombreKey, nombre: s.nombre, fecha: todayKey(), ts: Date.now() }
-    const prev = archivados
-    setArchivados((l) => [...l.filter((x) => x.nombreKey !== s.nombreKey), a])
-    setExpandido(null)
-    try {
-      await saveFiadoArchivado(a)
-    } catch (e) {
-      setArchivados(prev)
-      setError(e)
-    }
-  }
-
-  const restaurarCuenta = async (s) => {
-    const prev = archivados
-    setArchivados((l) => l.filter((x) => x.nombreKey !== s.nombreKey))
-    try {
-      await deleteFiadoArchivado(s.nombreKey)
-    } catch (e) {
-      setArchivados(prev)
       setError(e)
     }
   }
@@ -243,37 +207,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                   </span>
                   <span className="saldo__mov-monto">{formatMoney(c.monto)}</span>
                   {c.manual && c.id ? (
-                    confirmCargo === c.id ? (
-                      <div className="confirm-inline">
-                        <button
-                          className="confirm-inline__yes"
-                          onClick={() => {
-                            borrarCargo(c.id)
-                            setConfirmCargo(null)
-                          }}
-                          aria-label="Confirmar borrado"
-                          title="Borrar"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          className="confirm-inline__no"
-                          onClick={() => setConfirmCargo(null)}
-                          aria-label="Cancelar"
-                          title="Cancelar"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="player__del"
-                        onClick={() => setConfirmCargo(c.id)}
-                        aria-label="Borrar gasto"
-                      >
-                        ×
-                      </button>
-                    )
+                    <BotonBorrar onConfirm={() => borrarCargo(c.id)} label="Borrar gasto" />
                   ) : (
                     <span className="player__del player__del--ghost" aria-hidden="true" />
                   )}
@@ -320,7 +254,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                   placeholder="$ a pagar"
                   value={monto}
                   autoFocus
-                  onChange={(e) => setMonto(e.target.value.replace(/[^\d]/g, ''))}
+                  onChange={(e) => setMonto(soloDigitos(e.target.value))}
                 />
                 <div className="cuenta__medios">
                   {MEDIOS_PAGO.map((p) => (
@@ -345,27 +279,11 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                 </button>
                 <button
                   className="btn btn--ghost-sm"
-                  onClick={() => descargarBoleta(s)}
+                  onClick={() => descargarBoleta(s, emisor)}
                   title="Descargar imagen para enviar por WhatsApp"
                 >
                   📄 Boleta
                 </button>
-              </div>
-            ) : s.saldo === 0 && (s.cargos.length > 0 || s.pagos.length > 0) ? (
-              <div className="saldo__acciones">
-                {archivadoByKey.has(s.nombreKey) ? (
-                  <button className="btn btn--ghost-sm" onClick={() => restaurarCuenta(s)}>
-                    ↩️ Restaurar
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn--ghost-sm"
-                    onClick={() => archivarCuenta(s)}
-                    title="Saca la cuenta de la lista. No borra nada: el historial y los totales quedan intactos"
-                  >
-                    📦 Archivar
-                  </button>
-                )}
               </div>
             ) : null}
           </div>
@@ -375,16 +293,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Saldos / Fiados</h2>
-          <button className="player__del" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
-        </div>
-
-        <div className="modal__body">
+    <>
           {error ? (
             <p className="banner banner--error">No se pudo cargar: {error.message}</p>
           ) : !planillas ? (
@@ -431,7 +340,7 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                       inputMode="numeric"
                       placeholder="$ monto"
                       value={cgMonto}
-                      onChange={(e) => setCgMonto(e.target.value.replace(/[^\d]/g, ''))}
+                      onChange={(e) => setCgMonto(soloDigitos(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && agregarCargo()}
                     />
                     <input
@@ -482,28 +391,8 @@ export default function SaldosModal({ jugadores = [], sugerencias = [], onCommit
                 </div>
               )}
 
-              {archivadosList.length > 0 && (
-                <div className="cuentas__pagadas">
-                  <button className="cuentas__toggle" onClick={() => setVerArchivados((v) => !v)}>
-                    <span>
-                      {verArchivados ? '▾' : '▸'} Archivados ({archivadosList.length})
-                    </span>
-                  </button>
-                  {verArchivados && (
-                    <ul className="saldo-list">{archivadosList.map(renderItem)}</ul>
-                  )}
-                </div>
-              )}
             </>
           )}
-        </div>
-
-        <div className="modal__footer">
-          <button className="btn btn--primary" onClick={onClose}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }

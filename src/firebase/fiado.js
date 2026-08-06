@@ -1,8 +1,9 @@
-import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore'
-import { db, isFirebaseConfigured } from './config'
+import { setDoc, deleteDoc, getDocs } from 'firebase/firestore'
+import { isFirebaseConfigured } from './config'
+import { clubCol, clubDoc, readLocal, writeLocal } from './paths'
 
 // ---------------------------------------------------------------------------
-// Fiados. Tres colecciones:
+// Fiados de un club. Tres colecciones bajo clubs/{clubId}:
 //   fiadoPagos/{id}   { id, nombre, nombreKey, monto, medio, fecha, creado }
 //     Un pago (parcial o total) que una persona hace para saldar lo que debía.
 //   fiadoCargos/{id}  { id, nombre, nombreKey, concepto, monto, fecha, creado }
@@ -14,61 +15,52 @@ import { db, isFirebaseConfigured } from './config'
 //     (contado/mercado), archivar hacía desaparecer esa plata de los totales del
 //     mes. Se quitó esa acción, pero los cortes existentes se siguen leyendo
 //     para que las cuentas archivadas antes no vuelvan a mostrar deuda vieja.
-//   fiadoArchivados/{nombreKey}  { nombreKey, nombre, fecha, ts }
-//     Marca de "limpiar de la vista", sin borrar NADA: los pagos y cargos siguen
-//     enteros y los totales por medio del resumen mensual no cambian. Solo mueve
-//     la cuenta a la sección "Archivados" del modal. Si después aparece un
-//     movimiento nuevo (o el saldo deja de ser 0), la cuenta vuelve sola a la
-//     lista principal para que una deuda nueva nunca quede escondida.
+//   fiadoArchivados/{nombreKey}
+//     HISTÓRICO: ya no se lee ni se escribe. Era una marca para sacar de la vista
+//     una cuenta saldada; sobraba, porque las cuentas en cero ya viven en
+//     "Saldados", que viene plegado.
 // El saldo de una persona = lo cobrado "Anotado" + cargos manuales − pagos,
 // descontando lo archivado por el corte.
 // ---------------------------------------------------------------------------
-const read = (key) => {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-const write = (key, list) => localStorage.setItem(key, JSON.stringify(list))
+const read = (clubId, col) => readLocal(clubId, col, [])
+const write = writeLocal
 
-const load = async (col) => {
-  if (!isFirebaseConfigured) return read(col)
-  const snap = await getDocs(collection(db, col))
+const load = async (clubId, col) => {
+  if (!isFirebaseConfigured) return read(clubId, col)
+  const snap = await getDocs(clubCol(clubId, col))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
-const save = async (col, item) => {
+const save = async (clubId, col, item) => {
   if (!isFirebaseConfigured) {
-    const list = read(col)
+    const list = read(clubId, col)
     const i = list.findIndex((x) => x.id === item.id)
     if (i >= 0) list[i] = { ...list[i], ...item }
     else list.push(item)
-    write(col, list)
+    write(clubId, col, list)
     return
   }
   const { id, ...data } = item
-  await setDoc(doc(db, col, id), data, { merge: true })
+  await setDoc(clubDoc(clubId, col, id), data, { merge: true })
 }
-const remove = async (col, id) => {
+const remove = async (clubId, col, id) => {
   if (!isFirebaseConfigured) {
-    write(col, read(col).filter((x) => x.id !== id))
+    write(clubId, col, read(clubId, col).filter((x) => x.id !== id))
     return
   }
-  await deleteDoc(doc(db, col, id))
+  await deleteDoc(clubDoc(clubId, col, id))
 }
 
-export const loadFiadoPagos = () => load('fiadoPagos')
-export const saveFiadoPago = (pago) => save('fiadoPagos', pago)
-export const deleteFiadoPago = (id) => remove('fiadoPagos', id)
+export const loadFiadoPagos = (clubId) => load(clubId, 'fiadoPagos')
+export const saveFiadoPago = (clubId, pago) => save(clubId, 'fiadoPagos', pago)
+export const deleteFiadoPago = (clubId, id) => remove(clubId, 'fiadoPagos', id)
 
-export const loadFiadoCargos = () => load('fiadoCargos')
-export const saveFiadoCargo = (cargo) => save('fiadoCargos', cargo)
-export const deleteFiadoCargo = (id) => remove('fiadoCargos', id)
+export const loadFiadoCargos = (clubId) => load(clubId, 'fiadoCargos')
+export const saveFiadoCargo = (clubId, cargo) => save(clubId, 'fiadoCargos', cargo)
+export const deleteFiadoCargo = (clubId, id) => remove(clubId, 'fiadoCargos', id)
 
 // Solo lectura: los cortes existentes se respetan, pero no se crean nuevos.
-export const loadFiadoCortes = () => load('fiadoCortes')
+export const loadFiadoCortes = (clubId) => load(clubId, 'fiadoCortes')
 
-export const loadFiadoArchivados = () => load('fiadoArchivados')
-export const saveFiadoArchivado = (a) => save('fiadoArchivados', a)
-export const deleteFiadoArchivado = (nombreKey) => remove('fiadoArchivados', nombreKey)
+// `fiadoArchivados` ya no se usa: archivar una cuenta saldada era una vuelta de
+// más, porque "Saldados" ya viene plegado. Los documentos que hayan quedado no
+// molestan —nadie los lee— y sus cuentas vuelven a aparecer entre las saldadas.

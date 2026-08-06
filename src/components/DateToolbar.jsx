@@ -1,7 +1,9 @@
 import { PAGOS } from '../data/defaults'
 import { formatLongDate, formatMoney, shiftDateKey, todayKey } from '../utils/helpers'
 
-export default function DateToolbar({ dateKey, onChange, totals, onOpenResumen, onOpenSaldos }) {
+// Barra de la planilla: qué día se está viendo y cómo viene la caja. El resto de
+// las secciones (stock, finanzas…) vive en las pestañas de arriba.
+export default function DateToolbar({ dateKey, onChange, totals }) {
   return (
     <div className="toolbar">
       <div className="toolbar__date">
@@ -22,12 +24,6 @@ export default function DateToolbar({ dateKey, onChange, totals, onOpenResumen, 
         </button>
         <button className="btn btn--today" onClick={() => onChange(todayKey())}>
           Hoy
-        </button>
-        <button className="btn" onClick={onOpenResumen} title="Resumen del mes">
-          📊 Mes
-        </button>
-        <button className="btn" onClick={onOpenSaldos} title="Saldos / Fiados">
-          💳 Fiados
         </button>
       </div>
 

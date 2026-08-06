@@ -43,6 +43,12 @@ select {
   margin: 0 auto;
   padding: 18px 20px 60px;
 }
+/* Club con muchas canchas: se suelta el ancho máximo para que entren todas sin
+   cortarse. La solapa del cajón flota por encima de las canchas en vez de
+   reservarse una franja propia. */
+.app--ancho {
+  max-width: none;
+}
 
 /* ---------- Header ---------- */
 .header {
@@ -79,24 +85,435 @@ select {
   font-size: 12px;
   color: #94a3b8;
 }
+/* Selector de club: solo aparece cuando el usuario trabaja en más de uno. */
+.header__club-select {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  border-radius: 10px;
+  padding: 4px 28px 4px 8px;
+  background-image: linear-gradient(45deg, transparent 50%, #fff 50%),
+    linear-gradient(135deg, #fff 50%, transparent 50%);
+  background-position: right 12px center, right 7px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.header__club-select option {
+  color: #0f172a;
+}
+
+/* Panel de administración de clubes (super admin). */
+.admin-club {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.admin-club:hover {
+  background: #f1f5f9;
+}
+.admin-club--sel {
+  background: #e0e7ff;
+}
+.admin-club__nombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  /* Los emails largos se parten en vez de estirar la fila. */
+  overflow-wrap: anywhere;
+}
+/* Confirmación antes de desactivar un club. */
+.admin-confirm {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.admin-confirm__texto {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #78350f;
+}
+.admin-confirm__acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+/* Formularios del panel: si no entran en una línea, bajan a la siguiente. */
+.admin-row {
+  flex-wrap: wrap;
+}
+.admin-row .cfg-input {
+  min-width: 140px;
+}
+.admin-club__id {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.admin-club__off {
+  color: #ef4444;
+  font-weight: 400;
+}
 .header__right {
   display: flex;
   align-items: center;
   gap: 16px;
 }
-.header__config {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+/* ---------- Menú del usuario ---------- */
+.usuario {
+  position: relative;
+}
+.usuario__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 230px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font-size: 18px;
-  line-height: 1;
+  font-size: 13px;
   transition: background 0.12s ease;
 }
-.header__config:hover {
+.usuario__btn:hover {
   background: rgba(255, 255, 255, 0.18);
+}
+.usuario__avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.usuario__email {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usuario__flecha {
+  font-size: 11px;
+  opacity: 0.8;
+}
+.usuario__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+  padding: 6px;
+  z-index: 60;
+}
+.usuario__menu-email {
+  margin: 0;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-soft);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usuario__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.usuario__item:hover {
+  background: var(--surface-2);
+}
+.usuario__item--salir {
+  color: #dc2626;
+}
+.usuario__item--salir:hover {
+  background: #fee2e2;
+}
+
+/* ---------- Bloque de detalle plegable ---------- */
+.detalle {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.detalle__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  background: var(--surface-2);
+  text-align: left;
+}
+.detalle__head:hover {
+  background: var(--border);
+}
+.detalle__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.detalle__flecha {
+  color: var(--text-soft);
+  font-size: 11px;
+}
+.detalle__total {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+.detalle__body {
+  padding: 12px 14px;
+}
+
+/* Lista de líneas con monto a la derecha (vendido, costo, ganancia…). */
+.resumen__lineas {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.resumen__linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.resumen__linea:last-child {
+  border-bottom: none;
+}
+.resumen__linea-monto {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.resumen__linea--total {
+  font-weight: 800;
+}
+.resumen__linea--total .resumen__linea-monto {
+  font-size: 15px;
+  color: var(--primary-dark);
+}
+
+/* Subtítulo con total, para separar bloques dentro de una pantalla. */
+.resumen__sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 22px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.resumen__sub-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-soft);
+}
+.resumen__sub-total {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* ---------- Pestañas de secciones ---------- */
+.nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 6px;
+  margin-top: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.nav__tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.nav__tab:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav__tab.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+.nav__icono {
+  font-size: 15px;
+}
+.nav__aviso {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+/* ---------- Secciones (páginas) ---------- */
+.pantalla {
+  margin-top: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.pantalla__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.pantalla__titulo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.pantalla__desc {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  max-width: 70ch;
+}
+.pantalla__acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* En pantallas anchas el contenido no se estira de punta a punta: un campo de
+   nombre de 1500px o una tarjeta de total gigante son incómodos de leer. La
+   planilla es la excepción y por eso no usa este marco. */
+.pantalla__body {
+  padding: 18px 20px;
+  max-width: 1040px;
+}
+.pantalla__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+/* Aviso de que quedó algo sin guardar, en el pie de Configuración. */
+.cfg-pendiente {
+  font-size: 13px;
+  color: #b45309;
+  margin-right: auto;
+}
+
+/* ---------- Cartel al salir con cambios sin guardar ---------- */
+.salir-aviso {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.salir-aviso__caja {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+}
+.salir-aviso__titulo {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.salir-aviso__texto {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.salir-aviso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+/* Empuja las dos acciones que cierran el cartel hacia la derecha, dejando
+   "Seguir editando" —volver a lo que estaba haciendo— aparte, a la izquierda. */
+.salir-aviso__sep {
+  flex: 1;
+}
+
+/* Solapas dentro de una sección (Finanzas: mes / fiados). */
+.subnav {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.subnav__tab {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.subnav__tab.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.app__pie {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
 }
 .header__total {
   text-align: right;
@@ -209,6 +626,10 @@ select {
   font-size: 13px;
   font-weight: 600;
   transition: all 0.12s ease;
+  /* Dentro de un contenedor flex el botón no se aplasta: si falta lugar, se
+     achica el texto de al lado, no el botón (su texto se salía del borde). */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .btn:hover {
   background: var(--surface-2);
@@ -244,6 +665,15 @@ select {
 .btn--primary:hover {
   background: var(--primary-dark);
 }
+.btn--danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.btn--danger:hover {
+  background: #b91c1c;
+}
+
 .btn--add {
   padding: 3px 9px;
   font-size: 12px;
@@ -262,10 +692,99 @@ select {
   gap: 18px;
   align-items: start;
 }
+/* Sin esto la grilla de canchas ensancha la columna y termina desplazando la
+   página entera; con min-width 0 el desplazamiento queda dentro del tablero. */
+.layout__courts {
+  min-width: 0;
+}
+/* Club con muchas canchas: la planilla se queda con todo el ancho y Cuentas /
+   Consumos pasan al cajón lateral. */
+.layout--ancho {
+  grid-template-columns: 1fr;
+}
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------- Cajón lateral (Cuentas / Consumos) ---------- */
+.paneles-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 9px;
+  border: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: -4px 0 18px rgba(15, 23, 42, 0.22);
+}
+.paneles-tab:hover {
+  background: var(--primary-dark);
+  padding-right: 13px;
+}
+.paneles-tab__flecha {
+  font-size: 18px;
+  line-height: 1;
+}
+.paneles-tab__texto {
+  /* De arriba hacia abajo, como las solapas de las carpetas. */
+  writing-mode: vertical-rl;
+}
+.paneles-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fbbf24;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 45;
+}
+.drawer {
+  background: var(--surface-2);
+  width: min(420px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.25);
+  animation: drawer-in 0.18s ease-out;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    animation: none;
+  }
+}
+/* Solo el botón de cerrar: cada panel ya trae su propio título. */
+.drawer__head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 10px 0;
+}
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 14px 16px;
 }
 .section-title {
   margin: 0;
@@ -368,11 +887,71 @@ select {
 .courts__scroll {
   overflow-x: auto;
 }
+/* Las canchas se agrupan por horario: cada grupo es una tabla con su columna de
+   horarios, y las tablas van una al lado de la otra. */
+.courts__tablas {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  min-width: min-content;
+}
+.courts__tablas > .cgrid {
+  flex: 1 1 auto;
+}
+/* Fila de encabezados: queda pegada arriba y lleva la barra de desplazamiento,
+   así no hay que bajar al pie de la planilla para correrse de cancha. */
+.courts__heads {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* El respiro de arriba es para que las filas no pasen pegadas al encabezado
+     al desplazarse, pero no tiene que correr la tabla hacia abajo: el margen
+     negativo lo compensa, así los encabezados de cancha arrancan a la misma
+     altura que las tarjetas de la columna de al lado. */
+  margin-top: -6px;
+  padding: 6px 0 4px;
+  background: var(--surface-2);
+  scrollbar-width: thin;
+}
+/* La barra se ve siempre, aunque el sistema oculte las barras nativas. */
+.courts__heads::-webkit-scrollbar {
+  height: 10px;
+}
+.courts__heads::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.courts__heads::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.courts__heads::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cgrid--heads {
+  padding-bottom: 6px;
+}
 .cgrid {
   display: grid;
   gap: 8px;
   align-items: stretch;
   min-width: min-content;
+}
+/* La columna de horarios queda fija al desplazarse en horizontal, para no
+   perder de vista a qué franja corresponde cada turno. */
+.cgrid__corner,
+.cgrid__time {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-2);
+}
+/* Con más de un grupo hay varias columnas de horarios: si se pegaran todas al
+   borde izquierdo se superpondrían, así que cada una viaja con su tabla. */
+.cgrid--multi .cgrid__corner,
+.cgrid--multi .cgrid__time {
+  position: static;
 }
 .cgrid__corner {
   /* celda vacía sobre la columna de horarios */
@@ -395,8 +974,11 @@ select {
 }
 .cgrid__time {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
+  justify-content: center;
+  line-height: 1.35;
+  padding: 8px 10px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -406,6 +988,17 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
+}
+.cgrid__time-sep {
+  font-weight: 600;
+  font-size: 10px;
+  opacity: 0.55;
+}
+/* Franja en la que esa cancha no abre: se deja el lugar, apenas marcado. */
+.cgrid__hueco {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(148, 163, 184, 0.06);
 }
 .cgrid__cell {
   background: var(--surface);
@@ -455,7 +1048,8 @@ select {
 }
 .player {
   display: grid;
-  grid-template-columns: 1fr 78px auto auto;
+  /* El nombre nunca baja de un ancho legible, aunque la columna sea angosta. */
+  grid-template-columns: minmax(84px, 1fr) 78px auto auto;
   gap: 6px;
   align-items: center;
 }
@@ -497,6 +1091,120 @@ select {
 .player__del--ghost {
   background: transparent;
   pointer-events: none;
+}
+
+/* ---------- Celda de turno en modo reserva ---------- */
+.reserva {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reserva__head {
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) 90px;
+  gap: 6px;
+}
+.reserva__pagos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reserva__pago {
+  display: grid;
+  /* La última columna se adapta a lo que haya: el "×" solo, o el ✓ ✕ de la
+     confirmación. El lugar que necesita de más sale del nombre, que es lo
+     elástico de la fila; así no queda un hueco reservado cuando no hace falta. */
+  grid-template-columns: minmax(40px, 1fr) auto auto auto;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.reserva__pago .confirm-inline,
+.reserva__pago > button[aria-label='Quitar'] {
+  justify-self: end;
+}
+.reserva__pago-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-soft);
+}
+.reserva__pago-monto {
+  font-weight: 700;
+}
+.reserva__form {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) 78px auto auto auto;
+  gap: 4px;
+  align-items: center;
+}
+.reserva__form .player__name,
+.reserva__form .player__money {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.btn--sm {
+  padding: 6px 9px;
+}
+.reserva__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.reserva__pie .cell__add {
+  width: auto;
+  flex: 1;
+}
+.reserva__estado {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.reserva__estado--ok {
+  color: var(--primary-dark);
+}
+
+/* Elegir cómo se anota cada turno (config). */
+.cfg-modos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cfg-modo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.cfg-modo:hover {
+  border-color: var(--primary);
+}
+.cfg-modo.is-active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.cfg-modo__titulo {
+  font-size: 14px;
+  font-weight: 800;
+}
+.cfg-modo__desc {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.45;
 }
 
 /* ---------- Confirmación inline ---------- */
@@ -573,6 +1281,71 @@ select {
   background: var(--surface);
   width: 100%;
 }
+/* Input de jugador + botón "+" para sumar otro al reparto. El botón se estira a
+   lo alto del campo: al lado de un cuadro de texto, un botón más bajo se lee
+   como si estuviera flotando. */
+.consumos__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: stretch;
+}
+.consumos__row .nombre-input {
+  min-width: 0;
+}
+.reparto__add {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Jugadores entre los que se va a dividir el consumo. */
+.reparto {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.reparto__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Una parte del reparto que todavía no tiene nombre: se ve que está, pero sin
+   competir con los nombres cargados. */
+.reparto__chip--anon {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+.reparto__del {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.reparto__del:hover {
+  color: #dc2626;
+}
+.reparto__hint {
+  font-size: 11px;
+  margin: 0;
+}
+/* Entre cuántos se divide el consumo que se está cargando. */
 .consumos__list {
   list-style: none;
   margin: 0;
@@ -608,6 +1381,63 @@ select {
 .consumo__player {
   font-size: 11px;
   color: var(--text-soft);
+}
+/* Venta a alguien que no estaba jugando: no es un nombre que falte. */
+.consumo__player--mostrador {
+  font-style: italic;
+}
+/* "de Juan": de quién es el producto compartido, aunque esta parte no tenga dueño. */
+.consumo__player--ref {
+  font-style: italic;
+  opacity: 0.85;
+}
+/* "1/3": qué parte del producto compartido es esta línea. */
+.consumo__parte {
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary-dark);
+  font-size: 10px;
+  font-weight: 800;
+}
+.consumo__split {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+.consumo__split:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+.consumo__split:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* El formulario de división ocupa el ancho completo de la fila del consumo. */
+.dividir {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.dividir__head {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dividir__acciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 .consumo__qty {
   display: flex;
@@ -710,6 +1540,19 @@ select {
 .cuenta__name {
   font-weight: 700;
   font-size: 14px;
+}
+/* Aclara que la cuenta es de alguien de afuera, no de un jugador sin nombre. */
+.cuenta__tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .cuenta__total {
   font-weight: 800;
@@ -1015,6 +1858,8 @@ select {
 .modal__body {
   padding: 8px 20px 16px;
   overflow-y: auto;
+  /* El contenido se acomoda al ancho del modal: nunca scroll horizontal. */
+  overflow-x: hidden;
 }
 .modal__footer {
   display: flex;
@@ -1035,6 +1880,8 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 .cfg-actions {
@@ -1051,6 +1898,10 @@ select {
 }
 .cfg-section__head .cfg-section__title {
   margin: 0;
+  /* Un título largo ("Usuarios de …") se parte en vez de empujar al botón
+     fuera del modal. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .cfg-hint {
   margin: -4px 0 10px;
@@ -1099,6 +1950,123 @@ select {
 .cfg-dow-actions {
   margin-bottom: 10px;
 }
+
+/* Alcance del horario: el del club o el propio de una cancha */
+.cfg-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cfg-scope {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cfg-scope:hover {
+  background: var(--surface-2);
+}
+.cfg-scope.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+/* Punto indicador cuando esa cancha tiene horario propio */
+.cfg-scope.has-override::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.cfg-scope.has-override.is-active::after {
+  background: #bbf7d0;
+}
+
+/* Regla que genera las franjas: abre, cierra y duración del turno */
+.cfg-regla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.cfg-regla__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cfg-regla__campo .cfg-input {
+  flex: none;
+  width: 92px;
+}
+.cfg-input--dur {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  background: var(--surface);
+}
+.cfg-regla__btn {
+  margin-left: auto;
+}
+.cfg-regla__aviso {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #b45309;
+}
+.cfg-regla__pie {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+/* Rótulos que van guiando la carga: 1 · canchas, 2 · días, 3 · horas. */
+.cfg-paso {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cfg-lista-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cfg-lista-head {
+  margin: 14px 0 8px;
+}
+
+/* Franjas que la cancha hereda del club: solo para mirar */
+.cfg-franjas-ro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cfg-franja-ro {
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
 .cfg-row {
   display: flex;
   align-items: center;
@@ -1138,6 +2106,122 @@ select {
 .cfg-move {
   display: flex;
   gap: 3px;
+}
+
+/* ---------- Stock ---------- */
+.stock-head,
+.stock-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 64px 64px 78px 86px 30px;
+  gap: 6px;
+  align-items: center;
+}
+.stock-head {
+  padding: 0 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.stock-head > span:not(:first-child),
+.stock-row__num {
+  text-align: right;
+}
+.stock-row {
+  padding: 6px 4px;
+  border-top: 1px solid var(--border);
+}
+.stock-row--bajo {
+  background: color-mix(in srgb, #f59e0b 10%, transparent);
+}
+.stock-row__nombre {
+  font-weight: 600;
+  font-size: 14px;
+}
+.stock-row__num {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Producto que todavía no entró al control de stock. */
+.stock-row__sin {
+  grid-column: span 2;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.stock-row .cfg-input--price {
+  flex: none;
+  width: 100%;
+  padding: 6px;
+}
+/* Botón de carga de compra: cuadrado, para que la fila entre en el modal. */
+.stock-row__compra {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary-dark);
+}
+.stock-row__compra:hover {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+.stock-compra-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 10px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.stock-compra-form__campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.stock-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+.stock-compra-form__total {
+  font-weight: 800;
+  font-size: 15px;
+  margin-left: auto;
+}
+.stock-compras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.stock-compra {
+  display: grid;
+  /* La última columna deja lugar para los dos botones de la confirmación de
+     deshacer, así la fila no se desarma cuando aparece. */
+  grid-template-columns: 58px minmax(70px, 1fr) 40px 88px 88px 30px 56px;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 4px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.stock-compra .confirm-inline,
+.stock-compra > button[aria-label='Deshacer compra'] {
+  justify-self: end;
+}
+.stock-compra__nombre {
+  font-weight: 600;
 }
 
 /* ---------- Autocomplete de nombres ---------- */
@@ -1354,12 +2438,6 @@ select {
   .header__total-value {
     font-size: 20px;
   }
-  .header__config {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-
   /* ---- Toolbar de fecha + chips ---- */
   .toolbar {
     gap: 12px;

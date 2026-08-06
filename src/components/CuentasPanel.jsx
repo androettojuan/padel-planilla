@@ -2,6 +2,19 @@ import { useMemo, useState } from 'react'
 import { PAGOS, PAGOS_BY_ID } from '../data/defaults'
 import { formatMoney } from '../utils/helpers'
 import { buildCuentas, aplicarPago, SIN_ASIGNAR_LABEL } from '../utils/cuentas'
+import { conceptoConsumo, MOSTRADOR_LABEL } from '../utils/consumos'
+
+// Cómo se titula la cuenta. Las de un jugador llevan su nombre; las sueltas —una
+// venta de mostrador, o la parte de algo dividido sin nombres— se distinguen por
+// el producto, que es lo único que tienen: "Mostrador · Cerveza", "Cerveza (1/3)".
+function etiqueta(cuenta) {
+  if (!cuenta.suelto) return cuenta.nombre || SIN_ASIGNAR_LABEL
+  const productos = (cuenta.consumos || []).map(conceptoConsumo).join(' · ')
+  if (cuenta.mostrador) return productos ? `${MOSTRADOR_LABEL} · ${productos}` : MOSTRADOR_LABEL
+  if (!productos) return SIN_ASIGNAR_LABEL
+  // "Cerveza (2/3) · de Juan": la parte no tiene dueño, pero el producto sí.
+  return cuenta.referencia ? `${productos} · de ${cuenta.referencia}` : productos
+}
 
 export default function CuentasPanel({ config, planilla, update }) {
   const cuentas = useMemo(() => buildCuentas(planilla, config), [planilla, config])
@@ -10,11 +23,11 @@ export default function CuentasPanel({ config, planilla, update }) {
   // Mostrar el detalle de las cuentas ya cobradas (colapsado por defecto).
   const [verPagadas, setVerPagadas] = useState(false)
 
-  const confirmar = (nombre, medio) => {
-    update((prev) => aplicarPago(prev, nombre, medio, true))
+  const confirmar = (cuenta, medio) => {
+    update((prev) => aplicarPago(prev, cuenta, medio, true))
     setCobrando(null)
   }
-  const revertir = (nombre, medio) => update((prev) => aplicarPago(prev, nombre, medio, false))
+  const revertir = (cuenta, medio) => update((prev) => aplicarPago(prev, cuenta, medio, false))
 
   const pendientes = cuentas.filter((c) => !c.pagado)
   const pagadas = cuentas.filter((c) => c.pagado)
@@ -40,11 +53,14 @@ export default function CuentasPanel({ config, planilla, update }) {
         ) : (
           <ul className="cuentas__list">
             {pendientes.map((c) => {
-              const label = c.nombre || SIN_ASIGNAR_LABEL
+              const label = etiqueta(c)
               return (
-                <li className="cuenta" key={label}>
+                <li className="cuenta" key={c.key}>
                   <div className="cuenta__head">
-                    <span className="cuenta__name">{label}</span>
+                    <span className="cuenta__name">
+                      {label}
+                      {c.mostrador && <span className="cuenta__tag">no jugaba</span>}
+                    </span>
                     <span className="cuenta__total">{formatMoney(c.total)}</span>
                   </div>
 
@@ -57,14 +73,14 @@ export default function CuentasPanel({ config, planilla, update }) {
                     )}
                   </div>
 
-                  {cobrando === label ? (
+                  {cobrando === c.key ? (
                     <div className="cuenta__medios">
                       {PAGOS.map((p) => (
                         <button
                           key={p.id}
                           className="medio-btn"
                           style={{ '--pago-color': p.color }}
-                          onClick={() => confirmar(c.nombre, p.id)}
+                          onClick={() => confirmar(c, p.id)}
                         >
                           {p.label}
                         </button>
@@ -76,7 +92,7 @@ export default function CuentasPanel({ config, planilla, update }) {
                   ) : (
                     <button
                       className="btn btn--primary cuenta__cobrar"
-                      onClick={() => setCobrando(label)}
+                      onClick={() => setCobrando(c.key)}
                     >
                       Confirmar pago
                     </button>
@@ -102,19 +118,18 @@ export default function CuentasPanel({ config, planilla, update }) {
             {verPagadas && (
               <ul className="cuentas__list cuentas__list--pagadas">
                 {pagadas.map((c) => {
-                  const label = c.nombre || SIN_ASIGNAR_LABEL
                   const medio = c.medio ? PAGOS_BY_ID[c.medio] : null
                   return (
-                    <li className="cuenta cuenta--pagada" key={`${label}__${c.medio}`}>
+                    <li className="cuenta cuenta--pagada" key={`${c.key}__${c.medio}`}>
                       <div className="cuenta__head">
-                        <span className="cuenta__name">{label}</span>
+                        <span className="cuenta__name">{etiqueta(c)}</span>
                         <span className="cuenta__total">{formatMoney(c.total)}</span>
                       </div>
                       <div className="cuenta__paid">
                         <span className="pago pago--sm" style={{ '--pago-color': medio?.color }}>
                           ✓ {medio?.label || 'Pagado'}
                         </span>
-                        <button className="btn btn--ghost-sm" onClick={() => revertir(c.nombre, c.medio)}>
+                        <button className="btn btn--ghost-sm" onClick={() => revertir(c, c.medio)}>
                           Revertir
                         </button>
                       </div>

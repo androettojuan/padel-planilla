@@ -16,3 +16,10 @@ dist-ssr
 # Firebase / PWA dev
 .firebase/
 dev-dist/
+
+# Copia local de la base y credenciales de administración: nunca al repo.
+firestore-dump/
+service-account.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
