@@ -2,11 +2,13 @@ import { useState } from 'react'
 import Pantalla from '../components/Pantalla'
 import ResumenMensualPage from './ResumenMensualPage'
 import SaldosPage from './SaldosPage'
+import GastosPage from './GastosPage'
 
 /**
- * La plata del club en un solo lugar: lo facturado en el mes y lo que queda por
- * cobrar. Son dos vistas de lo mismo, así que comparten sección y se alternan
- * con las solapas de arriba en vez de estar en dos botones separados.
+ * La plata del club en un solo lugar: lo facturado en el mes, lo que se va en
+ * gastos fijos y lo que queda por cobrar. Son vistas de lo mismo, así que
+ * comparten sección y se alternan con las solapas de arriba en vez de estar en
+ * botones separados.
  */
 export default function FinanzasPage({ config, monthKey, jugadores, sugerencias, onCommitNombre }) {
   const [vista, setVista] = useState('mes')
@@ -14,7 +16,7 @@ export default function FinanzasPage({ config, monthKey, jugadores, sugerencias,
   return (
     <Pantalla
       titulo="Finanzas"
-      descripcion="Lo facturado en el mes y las cuentas que quedan por cobrar."
+      descripcion="Lo facturado en el mes, los gastos fijos y las cuentas que quedan por cobrar."
       acciones={
         <div className="subnav">
           <button
@@ -22,6 +24,12 @@ export default function FinanzasPage({ config, monthKey, jugadores, sugerencias,
             onClick={() => setVista('mes')}
           >
             Resumen del mes
+          </button>
+          <button
+            className={`subnav__tab ${vista === 'gastos' ? 'is-active' : ''}`}
+            onClick={() => setVista('gastos')}
+          >
+            Gastos fijos
           </button>
           <button
             className={`subnav__tab ${vista === 'fiados' ? 'is-active' : ''}`}
@@ -34,6 +42,8 @@ export default function FinanzasPage({ config, monthKey, jugadores, sugerencias,
     >
       {vista === 'mes' ? (
         <ResumenMensualPage monthKey={monthKey} />
+      ) : vista === 'gastos' ? (
+        <GastosPage monthKey={monthKey} />
       ) : (
         <SaldosPage
           config={config}
