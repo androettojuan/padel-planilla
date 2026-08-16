@@ -5,6 +5,7 @@ import {
   editarCompra,
   deshacerCompra,
   ajustarStock,
+  guardarCosto,
   guardarMinimo,
   moverStock,
 } from '../firebase/stock'
@@ -46,6 +47,10 @@ export function useStock(clubId) {
     (productoId, minimo) => guardarMinimo(clubId, productoId, minimo),
     [clubId],
   )
+  const setCosto = useCallback(
+    (productoId, costo) => guardarCosto(clubId, productoId, costo),
+    [clubId],
+  )
 
-  return { stock, descontar, comprar, editar, deshacer, ajustar, setMinimo }
+  return { stock, descontar, comprar, editar, deshacer, ajustar, setMinimo, setCosto }
 }

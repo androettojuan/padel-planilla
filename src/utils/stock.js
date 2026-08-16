@@ -31,6 +31,16 @@ export function faltaReponer(stock, productoId) {
   return (Number(s.cantidad) || 0) <= minimo
 }
 
+// Los productos se guardan y se muestran en orden alfabético, así la lista no
+// depende de en qué orden se fueron cargando. `localeCompare` con sensibilidad
+// base deja juntos "Coca" y "coca" y ordena bien los acentos.
+export const ordenarProductos = (productos = []) =>
+  [...productos].sort((a, b) =>
+    (a.nombre || '').localeCompare(b.nombre || '', 'es', {
+      sensitivity: 'base',
+    }),
+  )
+
 // Los productos a los que hay que reponer, en el orden en que están cargados.
 // Lo usan tanto la pestaña de Stock (para listarlos) como el aviso del menú
 // (para saber si hay alguno), así la regla se define una sola vez.
