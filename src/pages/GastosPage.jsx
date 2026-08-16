@@ -12,18 +12,14 @@ import {
 } from '../utils/helpers'
 import BotonBorrar from '../components/BotonBorrar'
 
-// Último día del mes ("YYYY-MM"), para que el calendario no deje elegir una
-// fecha fuera del mes que se está mirando: el gasto se cargaría y desaparecería.
-function finDeMes(monthKey) {
-  const [y, m] = monthKey.split('-').map(Number)
-  return `${monthKey}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
-}
-
 /**
- * Los gastos del club, mes por mes: cuándo se pagó, qué (luz, agua, gas, lo que
- * sea) y cuánto. No hay lista fija ni nada que configurar antes: se escribe el
- * gasto y se carga, como una compra de mercadería. El total va al resumen del
- * mes, así lo facturado no se lee como si fuera lo que queda.
+ * Los gastos del club, mes por mes: qué se pagó (luz, agua, gas, lo que sea) y
+ * cuánto. No hay lista fija ni nada que configurar antes: se escribe el gasto y
+ * se carga, como una compra de mercadería. El total va al resumen del mes, así
+ * lo facturado no se lee como si fuera lo que queda.
+ *
+ * La fecha no se pide: es la del día en que se carga. Se guarda igual, porque es
+ * la que decide en qué mes cae el gasto y la que después se ve en la lista.
  */
 export default function GastosPage({ monthKey }) {
   const clubId = useClubId()
@@ -31,10 +27,6 @@ export default function GastosPage({ monthKey }) {
   const [gastos, setGastos] = useState(null) // null = cargando
   const [error, setError] = useState(null)
 
-  // Un gasto se anota el día que se paga: si se está mirando un mes viejo, la
-  // fecha que se propone es la de ese mes, no la de hoy.
-  const fechaSugerida = todayKey().startsWith(mes) ? todayKey() : `${mes}-01`
-  const [fecha, setFecha] = useState(fechaSugerida)
   const [nombre, setNombre] = useState('')
   const [monto, setMonto] = useState('')
 
@@ -49,16 +41,15 @@ export default function GastosPage({ monthKey }) {
     }
   }, [clubId, mes])
 
-  // Al cambiar de mes el formulario arranca con una fecha de ese mes.
-  useEffect(() => {
-    setFecha(todayKey().startsWith(mes) ? todayKey() : `${mes}-01`)
-  }, [mes])
-
   const lista = useMemo(() => ordenarGastos(gastos || []), [gastos])
   const total = useMemo(() => totalGastos(gastos || []), [gastos])
 
   const importe = Number(monto) || 0
-  const puedeCargar = !!nombre.trim() && importe > 0 && !!fecha
+  const puedeCargar = !!nombre.trim() && importe > 0
+  // El gasto se carga con la fecha de hoy, así que en un mes que no es el actual
+  // no se carga nada: iría a parar al mes de hoy y desaparecería de la lista.
+  // Esos meses quedan para mirar.
+  const esMesActual = todayKey().startsWith(mes)
 
   // La lista se actualiza en memoria: la operación ya sabe con qué quedó, así
   // que volver a pedir el mes por red sería una lectura al pedo.
@@ -66,7 +57,7 @@ export default function GastosPage({ monthKey }) {
     if (!puedeCargar) return
     setError(null)
     try {
-      const gasto = await agregarGasto(clubId, { nombre, monto: importe, fecha })
+      const gasto = await agregarGasto(clubId, { nombre, monto: importe, fecha: todayKey() })
       if (gasto) setGastos((prev) => [...(prev || []), gasto])
       setNombre('')
       setMonto('')
@@ -115,46 +106,44 @@ export default function GastosPage({ monthKey }) {
       </div>
 
       <section className="cfg-section">
-        <div className="cfg-section__head">
-          <h3 className="cfg-section__title">Cargar un gasto</h3>
-        </div>
-        <div className="gasto-form">
-          <label className="stock-label">
-            Fecha
-            <input
-              className="cfg-input cfg-input--fecha"
-              type="date"
-              value={fecha}
-              min={`${mes}-01`}
-              max={finDeMes(mes)}
-              onChange={(e) => setFecha(e.target.value)}
-            />
-          </label>
-          <label className="stock-label gasto-form__desc">
-            Gasto
-            <input
-              className="cfg-input"
-              placeholder="Luz, agua, gas…"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && cargar()}
-            />
-          </label>
-          <label className="stock-label">
-            Monto
-            <input
-              className="cfg-input cfg-input--price"
-              inputMode="numeric"
-              placeholder="$"
-              value={monto}
-              onChange={(e) => setMonto(soloDigitos(e.target.value))}
-              onKeyDown={(e) => e.key === 'Enter' && cargar()}
-            />
-          </label>
-          <button className="btn btn--primary" disabled={!puedeCargar} onClick={cargar}>
-            Cargar gasto
-          </button>
-        </div>
+        {esMesActual ? (
+          <>
+            <div className="cfg-section__head">
+              <h3 className="cfg-section__title">Cargar un gasto</h3>
+            </div>
+            <div className="gasto-form">
+              <label className="stock-label gasto-form__desc">
+                Gasto
+                <input
+                  className="cfg-input"
+                  placeholder="Luz, agua, gas…"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && cargar()}
+                />
+              </label>
+              <label className="stock-label">
+                Monto
+                <input
+                  className="cfg-input cfg-input--price"
+                  inputMode="numeric"
+                  placeholder="$"
+                  value={monto}
+                  onChange={(e) => setMonto(soloDigitos(e.target.value))}
+                  onKeyDown={(e) => e.key === 'Enter' && cargar()}
+                />
+              </label>
+              <button className="btn btn--primary" disabled={!puedeCargar} onClick={cargar}>
+                Cargar gasto
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="cfg-hint">
+            Los gastos se cargan con la fecha del día, así que esto es lo que quedó registrado en{' '}
+            {formatMonth(mes)}. Para cargar uno nuevo, volvé al mes actual.
+          </p>
+        )}
 
         {!gastos ? (
           <p className="muted resumen__estado">Cargando…</p>

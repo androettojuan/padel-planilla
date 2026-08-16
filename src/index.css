@@ -2455,12 +2455,6 @@ select {
 .gasto-form__desc .cfg-input {
   width: 100%;
 }
-/* El selector de fecha del navegador no entra en los 110px de los campos de
-   plata: con menos ancho se corta el año. */
-.stock-label .cfg-input--fecha {
-  width: 150px;
-}
-
 .gasto-head,
 .gasto-row {
   display: grid;
