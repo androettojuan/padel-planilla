@@ -2439,6 +2439,77 @@ select {
   gap: 8px;
 }
 
+/* ---------- Gastos ---------- */
+/* Carga de un gasto: fecha, descripción y monto en una sola línea. La
+   descripción se lleva el espacio que sobra. */
+.gasto-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.gasto-form__desc {
+  flex: 1 1 200px;
+}
+.gasto-form__desc .cfg-input {
+  width: 100%;
+}
+.gasto-head,
+.gasto-row {
+  display: grid;
+  /* La última columna deja lugar para los dos botones de la confirmación de
+     borrado, así la fila no se desarma cuando aparece. */
+  grid-template-columns: 76px minmax(90px, 1fr) 100px 56px;
+  gap: 6px;
+  align-items: center;
+}
+.gasto-head {
+  padding: 0 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.gasto-head > span:not(:first-child):not(:nth-child(2)) {
+  text-align: right;
+}
+.gasto-row {
+  padding: 6px 4px;
+  border-top: 1px solid var(--border);
+}
+.gasto-row__nombre {
+  font-weight: 600;
+  font-size: 14px;
+}
+.gasto-row__num {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.gasto-row__fecha {
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.gasto-row .confirm-inline,
+.gasto-row > button[aria-label='Quitar'] {
+  justify-self: end;
+}
+/* Los gastos son plata que sale: el número grande no va en verde como el
+   facturado. */
+.resumen__total--neto {
+  margin-top: 4px;
+}
+.resumen__total-value--gasto {
+  color: #fca5a5;
+}
+.resumen__total-value--neg {
+  color: #f87171;
+}
+
 /* =====================================================================
    Responsive — teléfono. El escritorio queda intacto; todo lo de abajo
    solo aplica en pantallas chicas.
@@ -2574,6 +2645,12 @@ select {
   }
   .resumen__cards {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Gastos: columnas más angostas para que la fila entre sin scroll. */
+  .gasto-head,
+  .gasto-row {
+    grid-template-columns: 66px minmax(70px, 1fr) 88px 56px;
   }
 
   /* Config: horarios y precios siguen en una fila pero más compactos. */

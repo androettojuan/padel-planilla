@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadMonth } from '../firebase/planillas'
 import { loadFiadoPagos } from '../firebase/fiado'
 import { loadComprasMes } from '../firebase/stock'
+import { loadGastosMes } from '../firebase/gastos'
 import { resumenMensual } from '../utils/resumen'
+import { totalGastos, ordenarGastos } from '../utils/gastos'
 import { PAGOS } from '../data/defaults'
 import { formatMoney, formatMonth, formatDayShort, shiftMonth } from '../utils/helpers'
 import { useClubId } from '../hooks/useClub'
@@ -16,6 +18,7 @@ export default function ResumenMensualPage({ monthKey }) {
   const [planillas, setPlanillas] = useState(null) // null = cargando
   const [fiadoPagos, setFiadoPagos] = useState([])
   const [compras, setCompras] = useState([])
+  const [gastos, setGastos] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -54,6 +57,18 @@ export default function ResumenMensualPage({ monthKey }) {
     }
   }, [clubId, mes])
 
+  // Gastos del mes (luz, agua, alquiler, lo que se haya cargado en "Gastos").
+  useEffect(() => {
+    let active = true
+    setGastos([])
+    loadGastosMes(clubId, mes)
+      .then((g) => active && setGastos(g))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [clubId, mes])
+
   const gastoInsumos = useMemo(
     () => compras.reduce((s, c) => s + (Number(c.cantidad) || 0) * (Number(c.costo) || 0), 0),
     [compras],
@@ -64,7 +79,11 @@ export default function ResumenMensualPage({ monthKey }) {
     [fiadoPagos, mes],
   )
   const r = useMemo(() => resumenMensual(planillas || [], pagosMes), [planillas, pagosMes])
-  const sinDatos = planillas && r.total === 0
+  const gastosMes = useMemo(() => totalGastos(gastos), [gastos])
+  // Lo que quedó después de pagar todo: lo facturado menos los gastos fijos y la
+  // mercadería que se repuso este mes.
+  const neto = r.total - gastosMes - gastoInsumos
+  const sinDatos = planillas && r.total === 0 && gastosMes === 0
 
   return (
     <>
@@ -103,6 +122,56 @@ export default function ResumenMensualPage({ monthKey }) {
                   <span className="resumen__card-value">{formatMoney(r.pendiente)}</span>
                 </div>
               </div>
+
+              {/* Con gastos cargados el número que importa ya no es lo facturado
+                  sino lo que quedó después de pagarlos. */}
+              {(gastosMes > 0 || gastoInsumos > 0) && (
+                <>
+                  <div className="resumen__total resumen__total--neto">
+                    <span className="resumen__total-label">Resultado del mes</span>
+                    <span
+                      className={`resumen__total-value ${
+                        neto < 0 ? 'resumen__total-value--neg' : ''
+                      }`}
+                    >
+                      {formatMoney(neto)}
+                    </span>
+                  </div>
+
+                  <Detalle titulo="Gastos del mes" total={formatMoney(gastosMes + gastoInsumos)}>
+                    <ul className="resumen__lineas">
+                      <li className="resumen__linea">
+                        <span>Facturado</span>
+                        <span className="resumen__linea-monto">{formatMoney(r.total)}</span>
+                      </li>
+                      {ordenarGastos(gastos).map((g) => (
+                        <li className="resumen__linea" key={g.id}>
+                          <span>
+                            {g.nombre}
+                            {g.fecha ? ` · ${formatDayShort(g.fecha)}` : ''}
+                          </span>
+                          <span className="resumen__linea-monto">− {formatMoney(g.monto)}</span>
+                        </li>
+                      ))}
+                      {gastoInsumos > 0 && (
+                        <li className="resumen__linea">
+                          <span>Compras de mercadería</span>
+                          <span className="resumen__linea-monto">− {formatMoney(gastoInsumos)}</span>
+                        </li>
+                      )}
+                      <li className="resumen__linea resumen__linea--total">
+                        <span>Resultado</span>
+                        <span className="resumen__linea-monto">{formatMoney(neto)}</span>
+                      </li>
+                    </ul>
+                    <p className="cfg-hint">
+                      Los gastos son los que se cargaron en la solapa "Gastos". Lo facturado incluye
+                      lo que todavía no se cobró, así que el resultado es el del mes, no la plata que
+                      hay en la caja.
+                    </p>
+                  </Detalle>
+                </>
+              )}
 
               {/* El detalle fino queda plegado: la pantalla abre con los totales. */}
               {(r.consumos.venta > 0 || gastoInsumos > 0) && (
