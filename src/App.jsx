@@ -67,7 +67,8 @@ export default function App() {
   const { config, saveConfig } = useConfig(clubId)
   const { jugadores, saveJugador, deleteJugador, upsertNombre } = useJugadores(clubId)
   const { planilla, update, loading, error } = usePlanilla(clubId, dateKey)
-  const { stock, descontar, comprar, editar, deshacer, ajustar, setMinimo } = useStock(clubId)
+  const { stock, descontar, comprar, editar, deshacer, ajustar, setMinimo, setCosto } =
+    useStock(clubId)
 
   const totals = useMemo(() => computeTotals(planilla), [planilla])
   // Filas del tablero: la unión de las franjas de todas las canchas de ese día.
@@ -216,6 +217,7 @@ export default function App() {
             onDeshacerCompra={deshacer}
             onAjustar={ajustar}
             onMinimo={setMinimo}
+            onCosto={setCosto}
           />
         )}
 

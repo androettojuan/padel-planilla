@@ -2086,6 +2086,27 @@ select {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
 }
+/* Confirmación del producto nuevo: mismo tamaño que el "×" de al lado, para que
+   la fila en edición no quede más alta que las demás. */
+.cfg-row__ok {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  background: #dcfce7;
+  color: var(--primary-dark);
+}
+.cfg-row__ok:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+.cfg-row__ok:disabled {
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: default;
+}
 .cfg-row--horario {
   background: var(--surface-2);
   padding: 8px;
@@ -2112,9 +2133,20 @@ select {
 .stock-head,
 .stock-row {
   display: grid;
-  grid-template-columns: minmax(80px, 1fr) 64px 64px 78px 86px 30px;
+  grid-template-columns: minmax(80px, 1fr) 78px 78px 64px 78px 86px 30px;
   gap: 6px;
   align-items: center;
+}
+/* En modo edición la fila suma la columna del "×". Los 56px son el ancho de la
+   confirmación (✓ ✕), así la grilla no se corre cuando aparece. */
+.stock-head--editando,
+.stock-row--editando {
+  grid-template-columns: minmax(80px, 1fr) 78px 78px 64px 78px 86px 30px 56px;
+}
+/* Fila del producto que se está cargando: nombre, precio y los dos botones. Lo
+   que va en el medio queda vacío hasta que tenga su primera compra. */
+.stock-row__hueco {
+  grid-column: span 4;
 }
 .stock-head {
   padding: 0 4px 6px;
@@ -2194,6 +2226,13 @@ select {
   font-size: 11px;
   font-weight: 700;
   color: var(--text-soft);
+}
+/* El label apila etiqueta e input, así que el `flex-basis` de `.cfg-input--price`
+   caería sobre el alto y dejaría el recuadro enorme: acá el ancho va fijo y el
+   alto lo da el texto. */
+.stock-label .cfg-input {
+  flex: none;
+  width: 110px;
 }
 .stock-compra-form__total {
   font-weight: 800;

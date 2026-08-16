@@ -119,6 +119,25 @@ export async function ajustarStock(clubId, productoId, cantidad) {
   )
 }
 
+/**
+ * Corrige a mano el costo unitario del producto (mercadería vieja, un precio mal
+ * cargado). Lo normal es que lo deje la última compra: si después se corrige o
+ * se deshace una compra, el costo vuelve a salir del historial y pisa esto.
+ */
+export async function guardarCosto(clubId, productoId, costo) {
+  const costoUnit = Math.max(0, Math.round(Number(costo) || 0))
+  if (!productoId) return
+  if (!isFirebaseConfigured) {
+    patchLocal(clubId, productoId, { costo: costoUnit })
+    return
+  }
+  await setDoc(
+    clubDoc(clubId, 'stock', productoId),
+    { costo: costoUnit, actualizado: Date.now() },
+    { merge: true },
+  )
+}
+
 // Cantidad a partir de la cual el producto aparece como "hay que reponer".
 export async function guardarMinimo(clubId, productoId, minimo) {
   const min = Math.max(0, Math.round(Number(minimo) || 0))
