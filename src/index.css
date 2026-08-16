@@ -1697,15 +1697,30 @@ select {
   text-align: center;
   padding: 24px 0;
 }
+/* Los números grandes de la cabecera del resumen. Con `--dos` van dos en la
+   misma fila (facturado y resultado del mes); solos ocupan todo el ancho. */
+.resumen__totales {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.resumen__totales--dos {
+  grid-template-columns: 1fr 1fr;
+}
 .resumen__total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 10px;
   background: linear-gradient(135deg, #0f172a, #1e293b);
   color: #fff;
   border-radius: var(--radius-sm);
   padding: 14px 18px;
   margin-bottom: 14px;
+}
+/* Dentro de la grilla el espacio lo pone el `gap`. */
+.resumen__totales .resumen__total {
+  margin-bottom: 0;
 }
 .resumen__total-label {
   font-size: 12px;
@@ -2500,9 +2515,6 @@ select {
 }
 /* Los gastos son plata que sale: el número grande no va en verde como el
    facturado. */
-.resumen__total--neto {
-  margin-top: 4px;
-}
 .resumen__total-value--gasto {
   color: #fca5a5;
 }
@@ -2645,6 +2657,10 @@ select {
   }
   .resumen__cards {
     grid-template-columns: 1fr 1fr;
+  }
+  /* Los dos números grandes no entran uno al lado del otro en el teléfono. */
+  .resumen__totales--dos {
+    grid-template-columns: 1fr;
   }
 
   /* Gastos: columnas más angostas para que la fila entre sin scroll. */
