@@ -8,8 +8,7 @@ rules_version = '2';
 //   clubs/{clubId}/jugadores/{id}
 //   clubs/{clubId}/stock/{productoId}   { cantidad, costo, minimo, actualizado }
 //   clubs/{clubId}/stockCompras/{id}    { productoId, nombre, cantidad, costo, fecha, ts }
-//   clubs/{clubId}/gastosFijos/{id}     { nombre, monto, activo, creado }
-//   clubs/{clubId}/gastosPagos/{id}     { gastoId, nombre, monto, mes, fecha, ts }
+//   clubs/{clubId}/gastos/{id}          { nombre, monto, fecha, ts }
 //   clubs/{clubId}/fiadoPagos|fiadoCargos/{id}
 //   clubs/{clubId}/fiadoCortes|fiadoArchivados/{id}  históricos: la app ya no los
 //     escribe, pero siguen permitidos para no romper los datos que haya
@@ -80,11 +79,7 @@ service cloud.firestore {
         allow read, write: if isMember(clubId);
       }
 
-      match /gastosFijos/{doc} {
-        allow read, write: if isMember(clubId);
-      }
-
-      match /gastosPagos/{doc} {
+      match /gastos/{doc} {
         allow read, write: if isMember(clubId);
       }
 

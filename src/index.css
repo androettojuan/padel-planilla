@@ -2439,7 +2439,22 @@ select {
   gap: 8px;
 }
 
-/* ---------- Gastos fijos ---------- */
+/* ---------- Gastos ---------- */
+/* Carga de un gasto: fecha, descripción y monto en una sola línea. La
+   descripción se lleva el espacio que sobra. */
+.gasto-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.gasto-form__desc {
+  flex: 1 1 200px;
+}
+.gasto-form__desc .cfg-input {
+  width: 100%;
+}
 /* El selector de fecha del navegador no entra en los 110px de los campos de
    plata: con menos ancho se corta el año. */
 .stock-label .cfg-input--fecha {
@@ -2449,15 +2464,11 @@ select {
 .gasto-head,
 .gasto-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) 100px 76px 92px;
+  /* La última columna deja lugar para los dos botones de la confirmación de
+     borrado, así la fila no se desarma cuando aparece. */
+  grid-template-columns: 76px minmax(90px, 1fr) 100px 56px;
   gap: 6px;
   align-items: center;
-}
-/* En modo edición la fila suma la columna del "×". Los 56px son el ancho de la
-   confirmación (✓ ✕), así la grilla no se corre cuando aparece. */
-.gasto-head--editando,
-.gasto-row--editando {
-  grid-template-columns: minmax(90px, 1fr) 100px 76px 92px 56px;
 }
 .gasto-head {
   padding: 0 4px 6px;
@@ -2467,60 +2478,31 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-.gasto-head > span:not(:first-child) {
+.gasto-head > span:not(:first-child):not(:nth-child(2)) {
   text-align: right;
 }
 .gasto-row {
   padding: 6px 4px;
   border-top: 1px solid var(--border);
 }
-/* Lo ya pagado queda apenas marcado, para ver de un vistazo qué falta. */
-.gasto-row--pagado {
-  background: color-mix(in srgb, #16a34a 7%, transparent);
-}
 .gasto-row__nombre {
   font-weight: 600;
   font-size: 14px;
 }
-.gasto-row__baja {
-  font-size: 11px;
-  font-weight: 400;
-}
-.gasto-row__num,
-.gasto-row__fecha {
+.gasto-row__num {
   text-align: right;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 .gasto-row__fecha {
-  font-weight: 500;
+  font-size: 13px;
   color: var(--text-soft);
-}
-.gasto-row .cfg-input--price {
-  flex: none;
-  width: 100%;
-  padding: 6px;
-}
-.gasto-row__pagar {
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--primary-dark);
   white-space: nowrap;
 }
-.gasto-row__pagar:hover {
-  border-color: var(--primary);
-  background: var(--surface-2);
-}
-.gasto-row__pagar.is-pagado {
-  border-color: color-mix(in srgb, #16a34a 40%, transparent);
-  background: color-mix(in srgb, #16a34a 12%, transparent);
-  color: #15803d;
+.gasto-row .confirm-inline,
+.gasto-row > button[aria-label='Quitar'] {
+  justify-self: end;
 }
 /* Los gastos son plata que sale: el número grande no va en verde como el
    facturado. */
@@ -2671,14 +2653,10 @@ select {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* Gastos fijos: columnas más angostas para que la fila entre sin scroll. */
+  /* Gastos: columnas más angostas para que la fila entre sin scroll. */
   .gasto-head,
   .gasto-row {
-    grid-template-columns: minmax(70px, 1fr) 84px 62px 74px;
-  }
-  .gasto-head--editando,
-  .gasto-row--editando {
-    grid-template-columns: minmax(70px, 1fr) 84px 62px 74px 56px;
+    grid-template-columns: 66px minmax(70px, 1fr) 88px 56px;
   }
 
   /* Config: horarios y precios siguen en una fila pero más compactos. */

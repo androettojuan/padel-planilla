@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadMonth } from '../firebase/planillas'
 import { loadFiadoPagos } from '../firebase/fiado'
 import { loadComprasMes } from '../firebase/stock'
-import { loadPagosMes } from '../firebase/gastos'
+import { loadGastosMes } from '../firebase/gastos'
 import { resumenMensual } from '../utils/resumen'
-import { totalPagado } from '../utils/gastos'
+import { totalGastos, ordenarGastos } from '../utils/gastos'
 import { PAGOS } from '../data/defaults'
 import { formatMoney, formatMonth, formatDayShort, shiftMonth } from '../utils/helpers'
 import { useClubId } from '../hooks/useClub'
@@ -57,12 +57,11 @@ export default function ResumenMensualPage({ monthKey }) {
     }
   }, [clubId, mes])
 
-  // Gastos fijos efectivamente pagados en el mes (alquiler, luz, sueldos). Los que
-  // todavía no se pagaron no entran: acá se cuenta la plata que salió.
+  // Gastos del mes (luz, agua, alquiler, lo que se haya cargado en "Gastos").
   useEffect(() => {
     let active = true
     setGastos([])
-    loadPagosMes(clubId, mes)
+    loadGastosMes(clubId, mes)
       .then((g) => active && setGastos(g))
       .catch(() => {})
     return () => {
@@ -80,11 +79,11 @@ export default function ResumenMensualPage({ monthKey }) {
     [fiadoPagos, mes],
   )
   const r = useMemo(() => resumenMensual(planillas || [], pagosMes), [planillas, pagosMes])
-  const gastosFijos = useMemo(() => totalPagado(gastos), [gastos])
+  const gastosMes = useMemo(() => totalGastos(gastos), [gastos])
   // Lo que quedó después de pagar todo: lo facturado menos los gastos fijos y la
   // mercadería que se repuso este mes.
-  const neto = r.total - gastosFijos - gastoInsumos
-  const sinDatos = planillas && r.total === 0 && gastosFijos === 0
+  const neto = r.total - gastosMes - gastoInsumos
+  const sinDatos = planillas && r.total === 0 && gastosMes === 0
 
   return (
     <>
@@ -126,7 +125,7 @@ export default function ResumenMensualPage({ monthKey }) {
 
               {/* Con gastos cargados el número que importa ya no es lo facturado
                   sino lo que quedó después de pagarlos. */}
-              {(gastosFijos > 0 || gastoInsumos > 0) && (
+              {(gastosMes > 0 || gastoInsumos > 0) && (
                 <>
                   <div className="resumen__total resumen__total--neto">
                     <span className="resumen__total-label">Resultado del mes</span>
@@ -139,13 +138,13 @@ export default function ResumenMensualPage({ monthKey }) {
                     </span>
                   </div>
 
-                  <Detalle titulo="Gastos del mes" total={formatMoney(gastosFijos + gastoInsumos)}>
+                  <Detalle titulo="Gastos del mes" total={formatMoney(gastosMes + gastoInsumos)}>
                     <ul className="resumen__lineas">
                       <li className="resumen__linea">
                         <span>Facturado</span>
                         <span className="resumen__linea-monto">{formatMoney(r.total)}</span>
                       </li>
-                      {gastos.map((g) => (
+                      {ordenarGastos(gastos).map((g) => (
                         <li className="resumen__linea" key={g.id}>
                           <span>
                             {g.nombre}
@@ -166,9 +165,9 @@ export default function ResumenMensualPage({ monthKey }) {
                       </li>
                     </ul>
                     <p className="cfg-hint">
-                      Solo cuentan los gastos fijos ya marcados como pagados en "Gastos fijos". Lo
-                      facturado incluye lo que todavía no se cobró, así que el resultado es el del
-                      mes, no la plata que hay en la caja.
+                      Los gastos son los que se cargaron en la solapa "Gastos". Lo facturado incluye
+                      lo que todavía no se cobró, así que el resultado es el del mes, no la plata que
+                      hay en la caja.
                     </p>
                   </Detalle>
                 </>

@@ -1,120 +1,64 @@
-import { setDoc, deleteDoc, onSnapshot, getDocs, query, where } from 'firebase/firestore'
+import { setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore'
 import { isFirebaseConfigured } from './config'
 import { clubCol, clubDoc, readLocal, writeLocal } from './paths'
-import { uid } from '../utils/helpers'
+import { rangoMes, uid } from '../utils/helpers'
 
 // ---------------------------------------------------------------------------
-// Gastos fijos del club. Dos colecciones bajo clubs/{clubId}:
-//   gastosFijos/{id}   { nombre, monto, activo, creado }
-//     La plantilla: qué se paga todos los meses y cuánto suele salir. El `monto`
-//     es de referencia, no lo que se pagó.
-//   gastosPagos/{id}   { gastoId, nombre, monto, mes, fecha, ts }
-//     Lo que realmente se pagó, un documento por gasto y por mes. La luz no sale
-//     lo mismo en junio que en enero, así que el monto real vive acá y no pisa
-//     el de la plantilla.
+// Gastos del club. Una sola colección bajo clubs/{clubId}:
+//   gastos/{id}   { nombre, monto, fecha, ts }
 //
-// Un gasto figura como pagado en un mes si existe su pago; deshacerlo es borrar
-// ese documento. `nombre` se copia en el pago para que el historial siga siendo
-// legible si después se renombra o se borra el gasto de la plantilla.
+// Cada gasto es lo que se pagó: la fecha, en qué (luz, agua, gas, lo que sea) y
+// cuánto. No hay lista fija ni gastos "por pagar": se anota lo que salió, igual
+// que una compra de mercadería.
 // ---------------------------------------------------------------------------
-
-export function subscribeGastosFijos(clubId, onData, onError) {
-  if (!isFirebaseConfigured) {
-    onData(readLocal(clubId, 'gastosFijos', []))
-    return () => {}
-  }
-  return onSnapshot(
-    clubCol(clubId, 'gastosFijos'),
-    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-    (err) => onError && onError(err),
-  )
-}
-
-export async function saveGastoFijo(clubId, gasto) {
-  if (!isFirebaseConfigured) {
-    const list = readLocal(clubId, 'gastosFijos', [])
-    const i = list.findIndex((g) => g.id === gasto.id)
-    if (i >= 0) list[i] = { ...list[i], ...gasto }
-    else list.push(gasto)
-    writeLocal(clubId, 'gastosFijos', list)
-    return
-  }
-  const { id, ...data } = gasto
-  await setDoc(clubDoc(clubId, 'gastosFijos', id), data, { merge: true })
-}
 
 /**
- * Saca un gasto de la plantilla. Los pagos ya cargados quedan: son plata que
- * salió de verdad y el resumen de esos meses tiene que seguir cerrando.
+ * Gastos de un mes ("YYYY-MM"). Se filtra por el campo `fecha` (YYYY-MM-DD) con
+ * un rango de texto, que al ser un solo campo no necesita índice compuesto.
  */
-export async function deleteGastoFijo(clubId, id) {
+export async function loadGastosMes(clubId, monthKey) {
+  const [desde, hasta] = rangoMes(monthKey)
   if (!isFirebaseConfigured) {
-    writeLocal(
-      clubId,
-      'gastosFijos',
-      readLocal(clubId, 'gastosFijos', []).filter((g) => g.id !== id),
+    return readLocal(clubId, 'gastos', []).filter(
+      (g) => (g.fecha || '') >= desde && (g.fecha || '') <= hasta,
     )
-    return
   }
-  await deleteDoc(clubDoc(clubId, 'gastosFijos', id))
-}
-
-// Pagos de un mes ("YYYY-MM"). Filtra por un solo campo, así que no necesita
-// índice compuesto.
-export async function loadPagosMes(clubId, mes) {
-  if (!isFirebaseConfigured) {
-    return readLocal(clubId, 'gastosPagos', []).filter((p) => p.mes === mes)
-  }
-  const snap = await getDocs(query(clubCol(clubId, 'gastosPagos'), where('mes', '==', mes)))
+  const snap = await getDocs(
+    query(clubCol(clubId, 'gastos'), where('fecha', '>=', desde), where('fecha', '<=', hasta)),
+  )
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
 /**
- * Registra el pago de un gasto en un mes. Devuelve el pago cargado, para que la
- * pantalla lo agregue a la lista sin volver a leer el mes.
+ * Anota un gasto. Devuelve el gasto cargado, para que la pantalla lo agregue a
+ * la lista sin volver a leer el mes.
  */
-export async function pagarGasto(clubId, { gastoId, nombre, monto, mes, fecha }) {
+export async function agregarGasto(clubId, { nombre, monto, fecha }) {
   const importe = Math.max(0, Math.round(Number(monto) || 0))
-  if (!gastoId || !mes) return null
+  const desc = (nombre || '').trim()
+  if (!desc || importe <= 0 || !fecha) return null
 
-  const pago = { id: uid(), gastoId, nombre, monto: importe, mes, fecha, ts: Date.now() }
+  const gasto = { id: uid(), nombre: desc, monto: importe, fecha, ts: Date.now() }
 
   if (!isFirebaseConfigured) {
-    writeLocal(clubId, 'gastosPagos', [...readLocal(clubId, 'gastosPagos', []), pago])
-    return pago
+    writeLocal(clubId, 'gastos', [...readLocal(clubId, 'gastos', []), gasto])
+    return gasto
   }
-  const { id, ...data } = pago
-  await setDoc(clubDoc(clubId, 'gastosPagos', id), data)
-  return pago
+  const { id, ...data } = gasto
+  await setDoc(clubDoc(clubId, 'gastos', id), data)
+  return gasto
 }
 
-// Corrige un pago ya cargado (vino otro importe, se pagó otro día).
-export async function editarPagoGasto(clubId, pagoId, { monto, fecha }) {
-  const importe = Math.max(0, Math.round(Number(monto) || 0))
-  if (!pagoId) return
+// Borra un gasto cargado por error.
+export async function borrarGasto(clubId, id) {
+  if (!id) return
   if (!isFirebaseConfigured) {
     writeLocal(
       clubId,
-      'gastosPagos',
-      readLocal(clubId, 'gastosPagos', []).map((p) =>
-        p.id === pagoId ? { ...p, monto: importe, fecha } : p,
-      ),
+      'gastos',
+      readLocal(clubId, 'gastos', []).filter((g) => g.id !== id),
     )
     return
   }
-  await setDoc(clubDoc(clubId, 'gastosPagos', pagoId), { monto: importe, fecha }, { merge: true })
-}
-
-// Deshace un pago: el gasto vuelve a figurar como pendiente en ese mes.
-export async function borrarPagoGasto(clubId, pagoId) {
-  if (!pagoId) return
-  if (!isFirebaseConfigured) {
-    writeLocal(
-      clubId,
-      'gastosPagos',
-      readLocal(clubId, 'gastosPagos', []).filter((p) => p.id !== pagoId),
-    )
-    return
-  }
-  await deleteDoc(clubDoc(clubId, 'gastosPagos', pagoId))
+  await deleteDoc(clubDoc(clubId, 'gastos', id))
 }

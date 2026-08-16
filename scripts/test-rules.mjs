@@ -62,14 +62,18 @@ test('un miembro NO lee la planilla de otro club', () =>
 test('un miembro NO escribe en otro club', () =>
   assertFails(setDoc(doc(como(ANA), 'clubs/club-b/planillas/2026-07-03'), { turnos: {} })))
 
-test('un miembro carga un gasto fijo de su club', () =>
+test('un miembro carga un gasto de su club', () =>
   assertSucceeds(
-    setDoc(doc(como(ANA), 'clubs/club-a/gastosFijos/luz'), { nombre: 'Luz', monto: 70000 }),
+    setDoc(doc(como(ANA), 'clubs/club-a/gastos/g1'), {
+      nombre: 'Luz',
+      monto: 70000,
+      fecha: '2026-07-05',
+    }),
   ))
 
-test('un miembro NO carga el pago de un gasto en otro club', () =>
+test('un miembro NO carga un gasto en otro club', () =>
   assertFails(
-    setDoc(doc(como(ANA), 'clubs/club-b/gastosPagos/p1'), { gastoId: 'luz', mes: '2026-07' }),
+    setDoc(doc(como(ANA), 'clubs/club-b/gastos/g1'), { nombre: 'Luz', fecha: '2026-07-05' }),
   ))
 
 test('un miembro NO lee los jugadores de otro club', () =>
