@@ -2312,6 +2312,58 @@ select {
 .nombre-sug__item:hover {
   background: rgba(22, 163, 74, 0.12);
 }
+
+/* ---------- Buscador de productos ---------- */
+.producto-input {
+  position: relative;
+  width: 100%;
+}
+.producto-sug {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  max-height: 260px;
+  overflow-y: auto;
+}
+/* Nombre a la izquierda y precio/stock a la derecha: los precios quedan
+   alineados y el nombre largo se corta sin empujarlos. */
+.producto-sug__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.producto-sug__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.producto-sug__meta {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.producto-sug__item.is-selected {
+  font-weight: 600;
+}
+.producto-sug__item.is-active,
+.producto-sug__item:hover {
+  background: rgba(22, 163, 74, 0.12);
+}
+.producto-sug__vacio {
+  padding: 7px 9px;
+  font-size: 13px;
+}
 .btn--ghost-sm.is-off {
   opacity: 0.6;
 }
