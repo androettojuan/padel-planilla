@@ -11,8 +11,9 @@ import {
   repartirMonto,
   setCantidadConsumo,
 } from '../utils/consumos'
-import { cantidadDe, costoDe } from '../utils/stock'
+import { costoDe } from '../utils/stock'
 import BotonBorrar from './BotonBorrar'
+import ProductoInput from './ProductoInput'
 import { RepartoChips, RepartoInput, useReparto } from './Reparto'
 
 export default function ConsumosPanel({
@@ -104,23 +105,14 @@ export default function ConsumosPanel({
             onCommitNombre={onCommitNombre}
             onEnter={addConsumo}
           />
-          <select
+          <ProductoInput
             className="consumos__product"
+            productos={productos}
+            stock={stock}
             value={productoId}
-            onChange={(e) => setProductoId(e.target.value)}
-          >
-            {productos.map((p) => {
-              // De los productos con stock cargado se ve cuánto queda; los que no
-              // se controlan (alquiler de paletas y demás) se listan como siempre.
-              const queda = cantidadDe(stock, p.id)
-              return (
-                <option key={p.id} value={p.id}>
-                  {p.nombre} · {formatMoney(p.precio)}
-                  {queda === null ? '' : queda > 0 ? ` · quedan ${queda}` : ' · sin stock'}
-                </option>
-              )
-            })}
-          </select>
+            onChange={setProductoId}
+            onEnter={addConsumo}
+          />
           {reparto.total > 1 && producto && (
             <p className="reparto__hint muted">
               {formatMoney(producto.precio)} ÷ {reparto.total} ={' '}
