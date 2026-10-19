@@ -7,6 +7,8 @@ Construida con **Vite + React + Firebase** (Firestore + Auth con Google).
 Una sola instalación atiende a **varios clubes**: cada uno ve únicamente sus
 propios datos.
 
+![La planilla del día: turnos por cancha, totales por medio de pago y las cuentas pendientes](docs/capturas/planilla.png)
+
 ## Cómo está organizada
 
 La app son cinco secciones, con pestañas arriba y una URL propia cada una
@@ -37,12 +39,16 @@ de la cuenta, arriba a la derecha, y solo la ven los super admins.
 
   Cambiar de modo no toca lo ya cargado: cada turno se sigue mostrando como se
   anotó.
+
+  ![Planilla por reserva en un club de cuatro canchas: cada turno con quién reservó, los pagos encima y cuánto falta](docs/capturas/planilla-reserva.png)
 - **Horarios**: se cargan diciendo a qué hora abre y cierra el club y cuánto
   dura el turno, y la app genera las franjas (después se pueden retocar a mano).
   Cada cancha puede tener su propio horario, y cualquiera de los dos —club o
   cancha— puede tener uno distinto para un día de la semana. En la planilla las
   canchas se agrupan por horario: las que coinciden comparten una columna de
   horarios, y cada grupo distinto arma su propia tabla al lado.
+
+  <img src="docs/capturas/config.png" alt="Configuración: datos del club, canchas, modo de anotar los turnos y generador de horarios" width="640">
 - **Panel de consumos** con selector de productos del club (cerveza, agua, etc.),
   cantidad y tipo de pago. Un producto se puede **dividir entre varios
   jugadores** (el tubo de pelotas que pagan entre cuatro) y, si no se anota
@@ -50,15 +56,25 @@ de la cuenta, arriba a la derecha, y solo la ven los super admins.
   su propio cobro. En clubes de 3 canchas o más, Cuentas y Consumos dejan la
   columna del costado y se abren desde la solapa del borde derecho, para que la
   planilla use todo el ancho de la pantalla.
+
+  <img src="docs/capturas/planilla-paneles.png" alt="Cuentas pendientes de cada jugador y panel de consumos, con un tubo de pelotas dividido entre cuatro" width="360">
 - **Stock** de la mercadería: se carga con las compras (cantidad y costo) y cada
   consumo lo descuenta solo. Muestra cuánta plata hay en mercadería, avisa qué
   hay que reponer —con un punto en la pestaña— y en el resumen del mes calcula la
   ganancia de los consumos. Una compra cargada mal se corrige o se deshace, y el
   costo del producto vuelve a ser el de la última compra que quede. Un producto
   sin compras cargadas se vende sin descontar nada.
+
+  ![Stock: productos con precio de venta, costo, lo que queda y la plata en mercadería; los que hay que reponer, marcados](docs/capturas/stock.png)
 - **Totales del día** discriminados por tipo de pago, en tiempo real.
 - **Navegación por fecha**: cada día tiene su propia planilla.
-- **Saldos / fiados** y **resumen mensual** por club.
+- **Finanzas**: el **resumen del mes** (facturado por medio de pago, gastos,
+  ganancia de los consumos y resultado), los **gastos** del club y los
+  **fiados**, con el detalle de qué debe cada uno y la boleta para mandarle.
+
+  | Resumen del mes | Gastos | Fiados |
+  | --- | --- | --- |
+  | ![Resumen del mes](docs/capturas/finanzas-mes.png) | ![Gastos del mes](docs/capturas/finanzas-gastos.png) | ![Fiados, con el detalle de una cuenta abierto](docs/capturas/finanzas-fiados.png) |
 - **Multi-club**: quien trabaja en más de un club lo elige desde el header.
 
 ## Quién entra y a qué
@@ -72,6 +88,10 @@ de la cuenta, arriba a la derecha, y solo la ven los super admins.
 El alta de super admins **no se hace desde la app**: se carga a mano un
 documento en `superAdmins/{email}` desde la consola de Firebase. Es el único
 privilegio que no puede otorgarse desde adentro.
+
+| Ingreso | Administración de clubes (super admin) |
+| --- | --- |
+| ![Pantalla de ingreso con Google](docs/capturas/login.png) | ![Clubes: crear clubes y dar de alta usuarios](docs/capturas/clubes.png) |
 
 ## Puesta en marcha
 
@@ -139,6 +159,27 @@ npm run test:rules
 
 Verifica que un club no pueda ver los datos de otro, que nadie se agregue solo a
 un club y que solo el super admin dé de alta usuarios.
+
+### Capturas del README
+
+Las imágenes de `docs/capturas/` las genera un script, así se rehacen cada vez
+que cambia algo que se ve:
+
+```bash
+npm run capturas
+```
+
+Levanta su propio emulador (Firestore en 8180, Auth en 9299, para convivir con
+otro que esté abierto en los puertos de siempre), carga dos clubes inventados
+—**Padel del Parque**, por jugadores y con un mes de movimiento, y **Club
+Norte**, por reserva y con cuatro canchas— y saca una foto de cada sección con
+Playwright a tamaño tablet. No toca producción. El script está en
+[scripts/capturas/capturas.mjs](scripts/capturas/capturas.mjs).
+
+La primera vez hace falta el navegador de Playwright
+(`npx playwright install chromium`) y una fuente de emojis instalada en el
+sistema (por ejemplo Noto Color Emoji), si no los íconos de las pestañas salen
+como cuadraditos.
 
 ## Migración a multi-club
 
