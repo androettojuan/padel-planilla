@@ -5,6 +5,7 @@ import {
   connectAuthEmulator,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
@@ -40,9 +41,23 @@ export const db = app ? getFirestore(app) : null
 export const auth = app ? getAuth(app) : null
 export const isEmulator = useEmulator
 
+// Los puertos se pueden cambiar (VITE_EMULATOR_FIRESTORE_PORT / _AUTH_PORT) para
+// convivir con otro emulador corriendo en los de siempre, como hacen las capturas.
+const firestorePort = Number(import.meta.env.VITE_EMULATOR_FIRESTORE_PORT) || 8080
+const authPort = Number(import.meta.env.VITE_EMULATOR_AUTH_PORT) || 9099
+
 if (useEmulator && db && auth) {
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', firestorePort)
+  connectAuthEmulator(auth, `http://127.0.0.1:${authPort}`, { disableWarnings: true })
+  // Entrar sin pasar por el popup, para los scripts que manejan el navegador
+  // (capturas). El emulador acepta un token de Google sin firmar.
+  window.__entrarComo = (email, nombre = '') =>
+    signInWithCredential(
+      auth,
+      GoogleAuthProvider.credential(
+        JSON.stringify({ sub: email, email, name: nombre, email_verified: true }),
+      ),
+    )
 }
 
 const googleProvider = new GoogleAuthProvider()

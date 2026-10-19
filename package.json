@@ -15,7 +15,8 @@
     "db:migrate": "node scripts/migrate-multiclub.mjs",
     "db:check": "node scripts/check-migracion.mjs",
     "db:restore": "node scripts/restore-prod.mjs",
-    "test:rules": "node scripts/test-rules.mjs"
+    "test:rules": "node scripts/test-rules.mjs",
+    "capturas": "firebase emulators:exec --config firebase.capturas.json --only auth,firestore --project planilla-carest \"node scripts/capturas/capturas.mjs\""
   },
   "dependencies": {
     "firebase": "^11.1.0",
@@ -26,6 +27,7 @@
     "@firebase/rules-unit-testing": "^4.0.1",
     "@vitejs/plugin-react": "^4.3.4",
     "firebase-admin": "^14.2.0",
+    "playwright": "^1.64.1",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^1.3.0"
   }
